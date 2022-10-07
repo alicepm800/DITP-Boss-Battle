@@ -16,36 +16,50 @@ enum CatState
 
 };
 
+enum BossState {
+	STATE_BOSS_APPEAR = 0,
+	STATE_BOSS_IDLE,
+	STATE_BOSS_FOLLOW,
+	STATE_PHASE_ONE_ATTACK,
+	STATE_PHASE_TWO_ATTACK
+};
+
 struct GameState {
 
 	int attackCooldown = 0;
 	
 	CatState catState = STATE_APPEAR;
+	BossState bossState = STATE_BOSS_APPEAR;
 };
 
 GameState gameState;
 
 enum GameObjectType {
 	TYPE_NULL = -1,
-	TYPE_CAT
+	TYPE_CAT,
+	TYPE_BOSS
 };
 
 void UpdateCat();
+void UpdateBoss();
 void DrawObjectXFlipped(GameObject& obj);
 
 
 
 void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::CreateManager( DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_SCALE );
-	Play::CentreAllSpriteOrigins;
+	
 	Play::MoveSpriteOrigin("cat_idle", 50, 60);
 	Play::MoveSpriteOrigin("cat_run", 50, 60);
 	Play::MoveSpriteOrigin("cat_attack", 50, 60);
+	Play::MoveSpriteOrigin("boss_idle", 145, 120);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "steady_piece_1" );
 
 	int id_cat = Play::CreateGameObject(TYPE_CAT, { 500, 500 }, 50, "cat_idle");
 	GameObject& cat = Play::GetGameObject(id_cat);
+
+	int id_boss = Play::CreateGameObject(TYPE_BOSS, { 750, 250 }, 80, "boss_idle");
 	
 }
 
@@ -53,6 +67,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 bool MainGameUpdate( float elapsedTime ){
 	Play::DrawBackground();
 	UpdateCat();
+	UpdateBoss();
 	
 	Play::PresentDrawingBuffer();
 	return Play::KeyDown( VK_ESCAPE );
@@ -64,7 +79,6 @@ void UpdateCat() {
 
 	case STATE_APPEAR:
 		gameState.catState = STATE_IDLE;
-
 		break;
 
 	case STATE_IDLE:
@@ -108,8 +122,7 @@ void UpdateCat() {
 		break;
 
 
-	case STATE_ATTACK:
-		
+	case STATE_ATTACK:	
 		if (Play::KeyDown('B') && gameState.attackCooldown <= 0) {
 			Play::SetSprite(cat, "cat_attack", 0.2f); 
 			cat.has_attacked = true;
@@ -128,6 +141,19 @@ void UpdateCat() {
 	}
 	DrawObjectXFlipped(cat);
 	Play::UpdateGameObject(cat);	
+}
+
+void UpdateBoss() {
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
+
+//	switch (gameState.bossState) {
+	//case STATE_BOSS_APPEAR:
+
+//	}
+	Play::SetSprite(boss, "boss_idle", 0.15f);
+	DrawObjectXFlipped(boss);
+	Play::UpdateGameObject(boss);
+	
 }
 
 
