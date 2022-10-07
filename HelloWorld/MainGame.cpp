@@ -11,7 +11,8 @@ enum CatState
 {
 	STATE_APPEAR = 0,
 	STATE_IDLE,
-	STATE_RUN
+	STATE_RUN,
+	STATE_ATTACK
 
 };
 
@@ -40,6 +41,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::CentreAllSpriteOrigins;
 	Play::MoveSpriteOrigin("cat_idle", 50, 60);
 	Play::MoveSpriteOrigin("cat_run", 50, 60);
+	Play::MoveSpriteOrigin("cat_attack", 50, 60);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "steady_piece_1" );
 
@@ -73,19 +75,22 @@ void UpdateCat() {
 		if (Play::KeyDown(VK_LEFT) || Play::KeyDown(VK_RIGHT) || Play::KeyDown(VK_UP) || Play::KeyDown(VK_DOWN)) {
 			gameState.catState = STATE_RUN;
 		}
-		
+		if (Play::KeyDown('B')) {
+			gameState.catState = STATE_ATTACK;
+		}
+
 		break;
 
 	case STATE_RUN:
-	
+
 		if (Play::KeyDown(VK_LEFT)) {
 			Play::SetSprite(cat, "cat_run", 0.2f);
 			cat.velocity = { -5, 0 };
-			
+
 		}
 		else if (Play::KeyDown(VK_RIGHT)) {
 			Play::SetSprite(cat, "cat_run", 0.2f);
-			cat.velocity = { 5, 0 };			
+			cat.velocity = { 5, 0 };
 		}
 		else if (Play::KeyDown(VK_UP)) {
 			cat.velocity = { 0, -5 };
@@ -94,16 +99,26 @@ void UpdateCat() {
 		else if (Play::KeyDown(VK_DOWN)) {
 			cat.velocity = { 0, 5 };
 			Play::SetSprite(cat, "cat_run", 0.2f);
-			
+
 		}
 		else {
-				
+
+			gameState.catState = STATE_IDLE;
+		}
+		break;
+
+
+	case STATE_ATTACK:
+		if (Play::KeyDown('B')) {
+			Play::SetSprite(cat, "cat_attack", 0.1f);
+		}
+		else {
 			gameState.catState = STATE_IDLE;
 		}
 		break;
 	}
-		DrawObjectXFlipped(cat);
-		Play::UpdateGameObject(cat);
+	DrawObjectXFlipped(cat);
+	Play::UpdateGameObject(cat);
 		
 	
 }
