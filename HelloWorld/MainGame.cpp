@@ -126,8 +126,24 @@ void DrawObjectXFlipped(GameObject& obj) {
 	}
 	flipMat.row[2].x = obj.pos.x;
 	flipMat.row[2].y = obj.pos.y;
+	//when game object is idle
 	if (obj.velocity.x == 0 && obj.velocity.y == 0) {
 		if (obj.right_facing == true ){
+			flipMat.row[0].x = -2.0f;
+			flipMat.row[1].y = 2.0f;
+			flipMat.row[2].x = obj.pos.x;
+			flipMat.row[2].y = obj.pos.y;
+		}
+		else {
+			flipMat.row[0].x = 2.0f;
+			flipMat.row[1].y = 2.0f;
+			flipMat.row[2].x = obj.pos.x;
+			flipMat.row[2].y = obj.pos.y;
+		}
+	}
+	//when game object is moving up
+	if (obj.velocity.y < 0) {
+		if (obj.right_facing == false) {
 			flipMat.row[0].x = -2.0f;
 			flipMat.row[1].y = 2.0f;
 			flipMat.row[2].x = obj.pos.x;
