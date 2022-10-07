@@ -19,7 +19,7 @@ enum CatState
 struct GameState {
 
 	float gameTime = 0;
-	int spriteId = 0;
+	int attackId = 0;
 	
 	CatState catState = STATE_APPEAR;
 };
@@ -110,17 +110,16 @@ void UpdateCat() {
 
 	case STATE_ATTACK:
 		if (Play::KeyDown('B')) {
-			Play::SetSprite(cat, "cat_attack", 0.1f);
+			Play::SetSprite(cat, "cat_attack", 0.1f); //make a timer for how much health can go down, e.g. 5 health every 60 frames			
 		}
 		else {
-			gameState.catState = STATE_IDLE;
-		}
+			gameState.catState = STATE_IDLE;				
+		}		
 		break;
+		
 	}
 	DrawObjectXFlipped(cat);
-	Play::UpdateGameObject(cat);
-		
-	
+	Play::UpdateGameObject(cat);	
 }
 
 
