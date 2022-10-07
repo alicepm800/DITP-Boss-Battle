@@ -1503,8 +1503,9 @@ struct GameObject
 	float scale{ 1 };
 	int lastFrameUpdated{ -1 };
 
-	// new member variable
+	// new member variables
 	bool right_facing{ true };
+	bool has_attacked{ false };
 
 	// Add your own data members here if you want to
 	PLAY_ADD_GAMEOBJECT_MEMBERS

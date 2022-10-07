@@ -18,8 +18,7 @@ enum CatState
 
 struct GameState {
 
-	float gameTime = 0;
-	int attackId = 0;
+	int attackCooldown = 0;
 	
 	CatState catState = STATE_APPEAR;
 };
@@ -72,10 +71,11 @@ void UpdateCat() {
 		Play::SetSprite(cat, "cat_idle", 0.2f);
 		cat.velocity = { 0, 0 };
 		cat.scale = 2.0f;
+		gameState.attackCooldown--;
 		if (Play::KeyDown(VK_LEFT) || Play::KeyDown(VK_RIGHT) || Play::KeyDown(VK_UP) || Play::KeyDown(VK_DOWN)) {
 			gameState.catState = STATE_RUN;
 		}
-		if (Play::KeyDown('B')) {
+		if (Play::KeyPressed('B') && (gameState.attackCooldown <= 0)) {
 			gameState.catState = STATE_ATTACK;
 		}
 
@@ -109,11 +109,19 @@ void UpdateCat() {
 
 
 	case STATE_ATTACK:
-		if (Play::KeyDown('B')) {
-			Play::SetSprite(cat, "cat_attack", 0.1f); //make a timer for how much health can go down, e.g. 5 health every 60 frames			
+		
+		if (Play::KeyDown('B') && gameState.attackCooldown <= 0) {
+			Play::SetSprite(cat, "cat_attack", 0.2f); 
+			cat.has_attacked = true;
+			if (cat.frame == 4) {  //put in this statement the number of health decreased if there is a collision 
+				gameState.catState = STATE_IDLE;
+				gameState.attackCooldown = 8;
+			}
 		}
 		else {
-			gameState.catState = STATE_IDLE;				
+			gameState.attackCooldown = 8;
+			gameState.catState = STATE_IDLE;	
+			
 		}		
 		break;
 		
