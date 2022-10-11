@@ -20,6 +20,7 @@ enum BossState {
 	STATE_BOSS_APPEAR = 0,
 	STATE_BOSS_IDLE,
 	STATE_BOSS_FOLLOW,
+	STATE_BOSS_CASTING,
 	STATE_BOSS_FIREBALL,
 	STATE_TEST_IDLE
 	
@@ -31,6 +32,7 @@ struct GameState {
 	int bossIdleCooldown = 0;
 	int castingCooldown = 0;
 	int fireBallCooldown = 0;
+	int fireBallsCreated = 0;
 	
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -165,33 +167,45 @@ void UpdateBoss() {
 			Play::SetSprite(boss, "boss_idle", 0.12f);
 			gameState.bossIdleCooldown--;
 			if (gameState.bossIdleCooldown <= 0) {
-				gameState.bossState = STATE_BOSS_FIREBALL;
+				gameState.bossState = STATE_BOSS_CASTING;
 				gameState.castingCooldown = 50;
-				gameState.fireBallCooldown = 10;
+				gameState.fireBallCooldown = 25;
 				
 			}
 
 			break;
-		case STATE_BOSS_FIREBALL:
+		case STATE_BOSS_CASTING:
 			Play::SetSprite(boss, "boss_spell", 0.12f);
 			boss.velocity = { 0, 0 };
 			gameState.castingCooldown--;
 			if (gameState.castingCooldown <= 0) {
-				int fireball_id = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40}, 10, "fireball"); //put if statement here for position of fireball depending which way boss is facing			
+				Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40}, 10, "fireball"); //put if statement here for position of fireball depending which way boss is facing			
+				gameState.bossState = STATE_BOSS_FIREBALL;
+			}
+			break;
+
+		case STATE_BOSS_FIREBALL:
+			Play::SetSprite(boss, "boss_spell", 0.12f);
+			gameState.fireBallCooldown--;
+			if (gameState.fireBallCooldown <= 0) {
+					
+					gameState.fireBallsCreated++;
+					gameState.fireBallCooldown = 10;
+			}
+			if (gameState.fireBallsCreated == 3) {
 				gameState.bossState = STATE_TEST_IDLE;
 			}
-
 
 			
 			break;
 
 		case STATE_TEST_IDLE:
-			Play::SetSprite(boss, "boss_spell", 0.12f);
+			Play::SetSprite(boss, "boss_idle", 0.12f);
 			break;
 			
 	}
 
-	DrawObjectXFlipped(boss); //WOOO but fireball does not move, does not have a centred origin, nor does it come from the palm of the boss
+	DrawObjectXFlipped(boss); 
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
 	
@@ -269,6 +283,8 @@ void UpdateFireball() {
 	GameObject& fireball = Play::GetGameObjectByType(TYPE_FIREBALL);
 	
 	fireball.scale = 2.0f;
+	fireball.animSpeed = 2.0f;
+	Play::PointGameObject(fireball, 3.0f, cat.pos.x, cat.pos.y); //how do you make it only go to the cat position that was there during creation rather than updating its target position with every frame
 	Play::UpdateGameObject(fireball);
 	Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency
 
