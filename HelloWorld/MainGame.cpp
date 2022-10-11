@@ -209,7 +209,8 @@ void UpdateBoss() {
 			break;
 
 		case STATE_BOSS_CHASE:
-			Play::SetSprite(boss, "boss_walk", 0.12f);
+			Play::SetSprite(boss, "boss_walk", 0.25f);
+			Play::PointGameObject(boss, 1.5f, cat.pos.x, cat.pos.y);
 			break;
 			
 	}
@@ -224,17 +225,18 @@ void UpdateBoss() {
 
 void DrawObjectXFlipped(GameObject& obj) {
 	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
 	Matrix2D flipMat = MatrixIdentity();
 		
-	if (Play::KeyDown(VK_LEFT)) {
+	if (obj.velocity.x < 0) {
 		flipMat.row[0].x = -2.0f;
-		flipMat.row[1].y = 2.0f;
-		cat.right_facing = false;
+		flipMat.row[1].y = 2.0f;	
+		obj.right_facing = false;
 	}
-	else if (Play::KeyDown(VK_RIGHT)) {
+	else if (obj.velocity.x > 0 ) {
 		flipMat.row[0].x = 2.0f;
-		flipMat.row[1].y = 2.0f;
-		cat.right_facing = true;	
+		flipMat.row[1].y = 2.0f;		
+		obj.right_facing = true;
 	}
 	flipMat.row[2].x = obj.pos.x;
 	flipMat.row[2].y = obj.pos.y;
