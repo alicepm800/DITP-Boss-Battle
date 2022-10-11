@@ -33,6 +33,8 @@ struct GameState {
 	int castingCooldown = 0;
 	int fireBallCooldown = 0;
 	int fireBallsCreated = 0;
+	int catTargetPositionX = 0;
+	int catTargetPositionY = 0;
 	
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -179,7 +181,7 @@ void UpdateBoss() {
 			boss.velocity = { 0, 0 };
 			gameState.castingCooldown--;
 			if (gameState.castingCooldown <= 0) {
-				Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40}, 10, "fireball"); //put if statement here for position of fireball depending which way boss is facing			
+				Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40}, 10, "fireball"); //put if statement here for position of fireball depending which way boss is facing	
 				gameState.bossState = STATE_BOSS_FIREBALL;
 			}
 			break;
@@ -188,9 +190,12 @@ void UpdateBoss() {
 			Play::SetSprite(boss, "boss_spell", 0.12f);
 			gameState.fireBallCooldown--;
 			if (gameState.fireBallCooldown <= 0) {
-					
-					gameState.fireBallsCreated++;
-					gameState.fireBallCooldown = 10;
+				gameState.catTargetPositionX = cat.pos.x; //this does not update with each loop, it seems to save all fireballs into the same position rather than separate
+				gameState.catTargetPositionY = cat.pos.y;
+				Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40 }, 10, "fireball");
+				gameState.fireBallsCreated++;
+				gameState.fireBallCooldown = 25;
+
 			}
 			if (gameState.fireBallsCreated == 3) {
 				gameState.bossState = STATE_TEST_IDLE;
@@ -280,16 +285,16 @@ void DrawObjectXFlipped(GameObject& obj) {
 void UpdateFireball() {
 	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
 	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
-	GameObject& fireball = Play::GetGameObjectByType(TYPE_FIREBALL);
+	std::vector<int>fireball_list = Play::CollectGameObjectIDsByType(TYPE_FIREBALL);
 	
-	fireball.scale = 2.0f;
-	fireball.animSpeed = 2.0f;
-	Play::PointGameObject(fireball, 3.0f, cat.pos.x, cat.pos.y); //how do you make it only go to the cat position that was there during creation rather than updating its target position with every frame
-	Play::UpdateGameObject(fireball);
-	Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency
-
-
-
+	for (int fireball_id : fireball_list) {
+		GameObject& fireball = Play::GetGameObject(fireball_id);
+		fireball.scale = 2.0f;
+		fireball.animSpeed = 2.0f;
+		Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY); //how do you make fireball only go to the cat position at the point of fireball creation rather than updating its target position with every frame
+		Play::UpdateGameObject(fireball);
+		Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency
+	}
 
 }
 
