@@ -20,13 +20,17 @@ enum BossState {
 	STATE_BOSS_APPEAR = 0,
 	STATE_BOSS_IDLE,
 	STATE_BOSS_FOLLOW,
-	STATE_PHASE_ONE_ATTACK,
-	STATE_PHASE_TWO_ATTACK
+	STATE_BOSS_FIREBALL,
+	STATE_TEST_IDLE
+	
 };
 
 struct GameState {
 
 	int attackCooldown = 0;
+	int bossIdleCooldown = 0;
+	int castingCooldown = 0;
+	int fireBallCooldown = 0;
 	
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -37,11 +41,13 @@ GameState gameState;
 enum GameObjectType {
 	TYPE_NULL = -1,
 	TYPE_CAT,
-	TYPE_BOSS
+	TYPE_BOSS,
+	TYPE_FIREBALL
 };
 
 void UpdateCat();
 void UpdateBoss();
+void UpdateFireball();
 void DrawObjectXFlipped(GameObject& obj);
 
 
@@ -53,13 +59,15 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("cat_run", 50, 60);
 	Play::MoveSpriteOrigin("cat_attack", 50, 60);
 	Play::MoveSpriteOrigin("boss_idle", 145, 120);
+	Play::MoveSpriteOrigin("boss_spell", 145, 120);
+	Play::MoveSpriteOrigin("fireball", 15, 15);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "steady_piece_1" );
 
 	int id_cat = Play::CreateGameObject(TYPE_CAT, { 500, 500 }, 50, "cat_idle");
 	GameObject& cat = Play::GetGameObject(id_cat);
 
-	int id_boss = Play::CreateGameObject(TYPE_BOSS, { 750, 250 }, 80, "boss_idle");
+	int id_boss = Play::CreateGameObject(TYPE_BOSS, { 750, 250 }, 120, "boss_idle");
 	
 }
 
@@ -68,13 +76,13 @@ bool MainGameUpdate( float elapsedTime ){
 	Play::DrawBackground();
 	UpdateCat();
 	UpdateBoss();
-	
 	Play::PresentDrawingBuffer();
 	return Play::KeyDown( VK_ESCAPE );
 }
 
 void UpdateCat() {
 	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
 	switch (gameState.catState) {
 
 	case STATE_APPEAR:
@@ -145,14 +153,47 @@ void UpdateCat() {
 
 void UpdateBoss() {
 	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
+	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
 
-//	switch (gameState.bossState) {
-	//case STATE_BOSS_APPEAR:
+	switch (gameState.bossState) {
+		case STATE_BOSS_APPEAR:
+			gameState.bossState = STATE_BOSS_IDLE;
+			gameState.bossIdleCooldown = 120;
+			break;
 
-//	}
-	Play::SetSprite(boss, "boss_idle", 0.15f);
-	DrawObjectXFlipped(boss);
+		case STATE_BOSS_IDLE:
+			Play::SetSprite(boss, "boss_idle", 0.12f);
+			gameState.bossIdleCooldown--;
+			if (gameState.bossIdleCooldown <= 0) {
+				gameState.bossState = STATE_BOSS_FIREBALL;
+				gameState.castingCooldown = 50;
+				gameState.fireBallCooldown = 10;
+				
+			}
+
+			break;
+		case STATE_BOSS_FIREBALL:
+			Play::SetSprite(boss, "boss_spell", 0.12f);
+			boss.velocity = { 0, 0 };
+			gameState.castingCooldown--;
+			if (gameState.castingCooldown <= 0) {
+				int fireball_id = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40}, 10, "fireball"); //put if statement here for position of fireball depending which way boss is facing			
+				gameState.bossState = STATE_TEST_IDLE;
+			}
+
+
+			
+			break;
+
+		case STATE_TEST_IDLE:
+			Play::SetSprite(boss, "boss_spell", 0.12f);
+			break;
+			
+	}
+
+	DrawObjectXFlipped(boss); //WOOO but fireball does not move, does not have a centred origin, nor does it come from the palm of the boss
 	Play::UpdateGameObject(boss);
+	UpdateFireball();
 	
 }
 
@@ -220,6 +261,20 @@ void DrawObjectXFlipped(GameObject& obj) {
 		}
 	}
 	Play::DrawSpriteTransformed(obj.spriteId, flipMat, obj.frame);
+}
+
+void UpdateFireball() {
+	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
+	GameObject& fireball = Play::GetGameObjectByType(TYPE_FIREBALL);
+	
+	fireball.scale = 2.0f;
+	Play::UpdateGameObject(fireball);
+	Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency
+
+
+
+
 }
 
 
