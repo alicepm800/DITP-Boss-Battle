@@ -13,7 +13,6 @@ enum CatState
 	STATE_IDLE,
 	STATE_RUN,
 	STATE_ATTACK
-
 };
 
 enum BossState {
@@ -23,6 +22,7 @@ enum BossState {
 	STATE_BOSS_CASTING,
 	STATE_BOSS_FIREBALL,
 	STATE_BOSS_CHASE,
+	STATE_BOSS_CLEAVE,
 	STATE_TEST_IDLE
 	
 };
@@ -36,6 +36,7 @@ struct GameState {
 	int fireBallsCreated = 0;
 	int catTargetPositionX = 0;
 	int catTargetPositionY = 0;
+	int cleaveCooldown = 0;
 	
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -59,7 +60,6 @@ void DrawObjectXFlipped(GameObject& obj);
 
 void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::CreateManager( DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_SCALE );
-	
 	Play::MoveSpriteOrigin("cat_idle", 50, 60);
 	Play::MoveSpriteOrigin("cat_run", 50, 60);
 	Play::MoveSpriteOrigin("cat_attack", 50, 60);
@@ -68,6 +68,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("fireball", 15, 15);
 	Play::MoveSpriteOrigin("explosion", 15, 15);
 	Play::MoveSpriteOrigin("boss_walk", 145, 120);
+	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "steady_piece_1" );
 
@@ -203,6 +204,9 @@ void UpdateBoss() {
 			}
 			if (gameState.fireBallsCreated == 6) {
 				gameState.bossState = STATE_BOSS_CHASE;
+				if (Play::IsColliding(boss, cat)) {
+					gameState.bossState = STATE_BOSS_CLEAVE;
+				}
 			}
 
 			
@@ -211,7 +215,19 @@ void UpdateBoss() {
 		case STATE_BOSS_CHASE:
 			Play::SetSprite(boss, "boss_walk", 0.25f);
 			Play::PointGameObject(boss, 1.5f, cat.pos.x, cat.pos.y);
+			if (Play::IsColliding(boss, cat)) {
+				gameState.cleaveCooldown = 25;
+				gameState.bossState = STATE_BOSS_CLEAVE;
+			}
 			break;
+
+		case STATE_BOSS_CLEAVE:
+			//Play::SetSprite(boss, "boss_idle", 0.25f); //find a way to make it idle for a bit and include warning sound effect
+			boss.velocity = { 0, 0 };
+			gameState.cleaveCooldown--;
+			if (gameState.cleaveCooldown <= 0) {
+				Play::SetSprite(boss, "boss_cleave", 0.25f);
+			}
 			
 	}
 
