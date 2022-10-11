@@ -22,6 +22,7 @@ enum BossState {
 	STATE_BOSS_FOLLOW,
 	STATE_BOSS_CASTING,
 	STATE_BOSS_FIREBALL,
+	STATE_BOSS_CHASE,
 	STATE_TEST_IDLE
 	
 };
@@ -65,6 +66,8 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("boss_idle", 145, 120);
 	Play::MoveSpriteOrigin("boss_spell", 145, 120);
 	Play::MoveSpriteOrigin("fireball", 15, 15);
+	Play::MoveSpriteOrigin("explosion", 15, 15);
+	Play::MoveSpriteOrigin("boss_walk", 145, 120);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "steady_piece_1" );
 
@@ -170,7 +173,7 @@ void UpdateBoss() {
 			gameState.bossIdleCooldown--;
 			if (gameState.bossIdleCooldown <= 0) {
 				gameState.bossState = STATE_BOSS_CASTING;
-				gameState.castingCooldown = 50;
+				gameState.castingCooldown = 30;
 				gameState.fireBallCooldown = 25;
 				
 			}
@@ -181,7 +184,6 @@ void UpdateBoss() {
 			boss.velocity = { 0, 0 };
 			gameState.castingCooldown--;
 			if (gameState.castingCooldown <= 0) {
-				Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40}, 10, "fireball"); //put if statement here for position of fireball depending which way boss is facing	
 				gameState.bossState = STATE_BOSS_FIREBALL;
 			}
 			break;
@@ -190,22 +192,24 @@ void UpdateBoss() {
 			Play::SetSprite(boss, "boss_spell", 0.12f);
 			gameState.fireBallCooldown--;
 			if (gameState.fireBallCooldown <= 0) {
-				gameState.catTargetPositionX = cat.pos.x; //this does not update with each loop, it seems to save all fireballs into the same position rather than separate
+				gameState.catTargetPositionX = cat.pos.x; 
 				gameState.catTargetPositionY = cat.pos.y;
-				Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40 }, 10, "fireball");
+				int id_fireball = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40 }, 10, "fireball");
+				GameObject& fireball = Play::GetGameObject(id_fireball);
+				Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY);
 				gameState.fireBallsCreated++;
 				gameState.fireBallCooldown = 25;
 
 			}
-			if (gameState.fireBallsCreated == 3) {
-				gameState.bossState = STATE_TEST_IDLE;
+			if (gameState.fireBallsCreated == 6) {
+				gameState.bossState = STATE_BOSS_CHASE;
 			}
 
 			
 			break;
 
-		case STATE_TEST_IDLE:
-			Play::SetSprite(boss, "boss_idle", 0.12f);
+		case STATE_BOSS_CHASE:
+			Play::SetSprite(boss, "boss_walk", 0.12f);
 			break;
 			
 	}
@@ -290,10 +294,16 @@ void UpdateFireball() {
 	for (int fireball_id : fireball_list) {
 		GameObject& fireball = Play::GetGameObject(fireball_id);
 		fireball.scale = 2.0f;
-		fireball.animSpeed = 2.0f;
-		Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY); //how do you make fireball only go to the cat position at the point of fireball creation rather than updating its target position with every frame
+		fireball.animSpeed = 2.0f;	
 		Play::UpdateGameObject(fireball);
 		Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency
+
+		if (Play::IsColliding(fireball, cat)) {
+			Play::SetSprite(fireball, "explosion", 0.2f);
+			if (fireball.frame == 10) {
+				Play::DestroyGameObject(fireball_id);
+			}
+		}
 	}
 
 }
