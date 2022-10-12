@@ -38,7 +38,7 @@ struct GameState {
 	int catTargetPositionX = 0;
 	int catTargetPositionY = 0;
 	int cleaveCooldown = 0;
-	int hitColourCooldown = 0;
+	int hitBossCooldown = 5;
 	
 	
 	CatState catState = STATE_APPEAR;
@@ -74,6 +74,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("explosion", 15, 15);
 	Play::MoveSpriteOrigin("boss_walk", 145, 120);
 	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
+	Play::MoveSpriteOrigin("boss_hit", 145, 120);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "battle_theme" );
 
@@ -173,7 +174,7 @@ void UpdateBoss() {
 	switch (gameState.bossState) {
 		case STATE_BOSS_APPEAR:
 			gameState.bossState = STATE_BOSS_IDLE;
-			gameState.bossIdleCooldown = 250;
+			gameState.bossIdleCooldown = 200;
 			break;
 
 		case STATE_BOSS_IDLE:
@@ -181,9 +182,10 @@ void UpdateBoss() {
 			gameState.bossIdleCooldown--;
 			if ((Play::IsColliding(boss, cat)) && (gameState.catState == STATE_ATTACK)) {
 				gameState.bossState = STATE_BOSS_HIT;
-				gameState.hitColourCooldown = 5;
+				
 			}
 			if (gameState.bossIdleCooldown <= 0) {
+				gameState.fireBallsCreated = 0;
 				gameState.bossState = STATE_BOSS_CASTING;
 				gameState.castingCooldown = 30;
 				gameState.fireBallCooldown = 25;
@@ -206,17 +208,27 @@ void UpdateBoss() {
 			if (gameState.fireBallCooldown <= 0) {
 				gameState.catTargetPositionX = cat.pos.x; 
 				gameState.catTargetPositionY = cat.pos.y;
-				int id_fireball = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40 }, 10, "fireball");
-				GameObject& fireball = Play::GetGameObject(id_fireball);
-				Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY);
-				gameState.fireBallsCreated++;
-				gameState.fireBallCooldown = 25;
+				if (boss.right_facing == true) {
+					int id_fireball = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40 }, 10, "fireball");
+					GameObject& fireball = Play::GetGameObject(id_fireball);
+					Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY);
+					gameState.fireBallsCreated++;
+					gameState.fireBallCooldown = 25;
+				}
+				else if (boss.right_facing == false) {
+					int id_fireball = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x - 150, boss.pos.y - 40 }, 10, "fireball");
+					GameObject& fireball = Play::GetGameObject(id_fireball);
+					Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY);
+					gameState.fireBallsCreated++;
+					gameState.fireBallCooldown = 25;
+				}
 
 			}
 			if (gameState.fireBallsCreated == 6) {
 				gameState.bossState = STATE_BOSS_CHASE;
 				if (Play::IsColliding(boss, cat)) {
 					gameState.bossState = STATE_BOSS_CLEAVE;
+					
 				}
 			}
 
@@ -227,6 +239,10 @@ void UpdateBoss() {
 			Play::SetSprite(boss, "boss_walk", 0.25f);
 			Play::PointGameObject(boss, 1.5f, cat.pos.x, cat.pos.y);
 			if (Play::IsColliding(boss, cat)) {
+				if (gameState.catState == STATE_ATTACK) {
+					gameState.bossState = STATE_BOSS_HIT;
+				}
+				
 				gameState.cleaveCooldown = 25;
 				gameState.bossState = STATE_BOSS_CLEAVE; //randomise attacks, so put if randomiser is below 10 due cleave, if between 10 and 20 do spell if phase 1 etc...
 			}
@@ -249,7 +265,8 @@ void UpdateBoss() {
 				}
 				if (boss.frame == 15) {
 					Play::DestroyGameObjectsByType(TYPE_SWORD);
-					gameState.bossState = STATE_TEST_IDLE;
+					gameState.bossIdleCooldown = 100;
+					gameState.bossState = STATE_BOSS_IDLE;
 				
 				}
 			}
@@ -259,18 +276,17 @@ void UpdateBoss() {
 			Play::SetSprite(boss, "boss_idle", 0.12f);
 			break;
 
-		case STATE_BOSS_HIT: //make it flash red instead 
-			Play::ColourSprite("boss_idle", Play::cRed); //make a global value to make every sprite of the boss turn red 
-			gameState.hitColourCooldown--;
-			if (gameState.hitColourCooldown <= 0) {
-				Play::ColourSprite("boss_idle", Play::cWhite);
-				gameState.bossState = STATE_BOSS_IDLE;
+		case STATE_BOSS_HIT: 
+		 //add stars and slash marks instead at end of cat sword using how playbuffer did the stars coming out of coin
+			gameState.hitBossCooldown--;
+			if (boss.frame == 5) {
+				gameState.bossState = STATE_BOSS_CHASE;
 			}
 
 			
 			break;
 	}
-	UpdateHit(boss);
+	
 	DrawObjectXFlipped(boss); 
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
@@ -366,13 +382,7 @@ void UpdateFireball() {
 
 }
 
-void UpdateHit(GameObject& obj) {
-	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
-	if ((Play::IsColliding(obj, cat)) && gameState.catState == STATE_ATTACK) {
-		Play::ColourSprite(Play::GetSpriteName(obj.GetId()), Play::cRed); //makes it extremely slow 
-	}
 
-}
 
 
 int MainGameExit(void)
