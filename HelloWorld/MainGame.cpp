@@ -72,7 +72,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
 
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
-	//Play::StartAudioLoop( "steady_piece_1" );
+	//Play::StartAudioLoop( "battle_theme" );
 
 	int id_cat = Play::CreateGameObject(TYPE_CAT, { 500, 500 }, 50, "cat_idle");
 	GameObject& cat = Play::GetGameObject(id_cat);
@@ -107,7 +107,7 @@ void UpdateCat() {
 		if (Play::KeyDown(VK_LEFT) || Play::KeyDown(VK_RIGHT) || Play::KeyDown(VK_UP) || Play::KeyDown(VK_DOWN)) {
 			gameState.catState = STATE_RUN;
 		}
-		if (Play::KeyPressed('B') && (gameState.attackCooldown <= 0)) {
+		if (Play::KeyPressed('A') && (gameState.attackCooldown <= 0)) {
 			gameState.catState = STATE_ATTACK;
 		}
 
@@ -141,9 +141,12 @@ void UpdateCat() {
 
 
 	case STATE_ATTACK:	
-		if (Play::KeyDown('B') && gameState.attackCooldown <= 0) {
+		if (Play::KeyDown('A') && gameState.attackCooldown <= 0) {
 			Play::SetSprite(cat, "cat_attack", 0.2f); 
 			cat.has_attacked = true;
+			if (Play::IsColliding(boss, cat)) {
+				Play::PlayAudio("hit");
+			}
 			if (cat.frame == 4) {  //put in this statement the number of health decreased if there is a collision 
 				gameState.catState = STATE_IDLE;
 				gameState.attackCooldown = 8;
@@ -232,15 +235,16 @@ void UpdateBoss() {
 
 				if (boss.frame == 10) {//&& inivisible game object is colliding with cat then reduce cat's health and play hit sounds and animation 
 					if (boss.right_facing == true) {
-						Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40}, 50, "");
+						Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40 }, 50, "");
 					}
-					else if (boss.right_facing == false){
+					else if (boss.right_facing == false) {
 						Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 50, "");
 					}
-				if (boss.frame == 15) {
-					boss.animSpeed = 0.0f;
-				//	gameState.bossState = STATE_TEST_IDLE;
 				}
+				if (boss.frame == 15) {
+					Play::DestroyGameObjectsByType(TYPE_SWORD);
+					gameState.bossState = STATE_TEST_IDLE;
+				
 				}
 			}
 			break;
