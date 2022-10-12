@@ -48,7 +48,8 @@ enum GameObjectType {
 	TYPE_NULL = -1,
 	TYPE_CAT,
 	TYPE_BOSS,
-	TYPE_FIREBALL
+	TYPE_FIREBALL,
+	TYPE_SWORD
 };
 
 void UpdateCat();
@@ -69,6 +70,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("explosion", 15, 15);
 	Play::MoveSpriteOrigin("boss_walk", 145, 120);
 	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
+
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "steady_piece_1" );
 
@@ -227,8 +229,23 @@ void UpdateBoss() {
 			gameState.cleaveCooldown--;
 			if (gameState.cleaveCooldown <= 0) {
 				Play::SetSprite(boss, "boss_cleave", 0.25f);
+
+				if (boss.frame == 10) {//&& inivisible game object is colliding with cat then reduce cat's health and play hit sounds and animation 
+					if (boss.right_facing == true) {
+						Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40}, 50, "");
+					}
+				if (boss.frame == 15) {
+					boss.animSpeed = 0.0f;
+				//	gameState.bossState = STATE_TEST_IDLE;
+				}
+				}
 			}
+			break;
+
+		case STATE_TEST_IDLE:
+			Play::SetSprite(boss, "boss_idle", 0.12f);
 			
+			break;
 	}
 
 	DrawObjectXFlipped(boss); 
