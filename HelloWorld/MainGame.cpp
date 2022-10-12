@@ -23,6 +23,7 @@ enum BossState {
 	STATE_BOSS_FIREBALL,
 	STATE_BOSS_CHASE,
 	STATE_BOSS_CLEAVE,
+	STATE_BOSS_HIT,
 	STATE_TEST_IDLE
 	
 };
@@ -37,6 +38,8 @@ struct GameState {
 	int catTargetPositionX = 0;
 	int catTargetPositionY = 0;
 	int cleaveCooldown = 0;
+	int hitColourCooldown = 0;
+	
 	
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -55,6 +58,7 @@ enum GameObjectType {
 void UpdateCat();
 void UpdateBoss();
 void UpdateFireball();
+void UpdateHit(GameObject& obj);
 void DrawObjectXFlipped(GameObject& obj);
 
 
@@ -70,7 +74,6 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("explosion", 15, 15);
 	Play::MoveSpriteOrigin("boss_walk", 145, 120);
 	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
-
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "battle_theme" );
 
@@ -143,7 +146,6 @@ void UpdateCat() {
 	case STATE_ATTACK:	
 		if (Play::KeyDown('A') && gameState.attackCooldown <= 0) {
 			Play::SetSprite(cat, "cat_attack", 0.2f); 
-			cat.has_attacked = true;
 			if (Play::IsColliding(boss, cat)) {
 				Play::PlayAudio("hit");
 			}
@@ -171,12 +173,16 @@ void UpdateBoss() {
 	switch (gameState.bossState) {
 		case STATE_BOSS_APPEAR:
 			gameState.bossState = STATE_BOSS_IDLE;
-			gameState.bossIdleCooldown = 120;
+			gameState.bossIdleCooldown = 250;
 			break;
 
 		case STATE_BOSS_IDLE:
 			Play::SetSprite(boss, "boss_idle", 0.12f);
 			gameState.bossIdleCooldown--;
+			if ((Play::IsColliding(boss, cat)) && (gameState.catState == STATE_ATTACK)) {
+				gameState.bossState = STATE_BOSS_HIT;
+				gameState.hitColourCooldown = 5;
+			}
 			if (gameState.bossIdleCooldown <= 0) {
 				gameState.bossState = STATE_BOSS_CASTING;
 				gameState.castingCooldown = 30;
@@ -222,12 +228,12 @@ void UpdateBoss() {
 			Play::PointGameObject(boss, 1.5f, cat.pos.x, cat.pos.y);
 			if (Play::IsColliding(boss, cat)) {
 				gameState.cleaveCooldown = 25;
-				gameState.bossState = STATE_BOSS_CLEAVE;
+				gameState.bossState = STATE_BOSS_CLEAVE; //randomise attacks, so put if randomiser is below 10 due cleave, if between 10 and 20 do spell if phase 1 etc...
 			}
 			break;
 
 		case STATE_BOSS_CLEAVE:
-			//Play::SetSprite(boss, "boss_idle", 0.25f); //find a way to make it idle for a bit and include warning sound effect
+			// include warning sound effect
 			boss.velocity = { 0, 0 };
 			gameState.cleaveCooldown--;
 			if (gameState.cleaveCooldown <= 0) {
@@ -251,10 +257,20 @@ void UpdateBoss() {
 
 		case STATE_TEST_IDLE:
 			Play::SetSprite(boss, "boss_idle", 0.12f);
+			break;
+
+		case STATE_BOSS_HIT: //make it flash red instead 
+			Play::ColourSprite("boss_idle", Play::cRed); //make a global value to make every sprite of the boss turn red 
+			gameState.hitColourCooldown--;
+			if (gameState.hitColourCooldown <= 0) {
+				Play::ColourSprite("boss_idle", Play::cWhite);
+				gameState.bossState = STATE_BOSS_IDLE;
+			}
+
 			
 			break;
 	}
-
+	UpdateHit(boss);
 	DrawObjectXFlipped(boss); 
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
@@ -346,6 +362,14 @@ void UpdateFireball() {
 				Play::DestroyGameObject(fireball_id);
 			}
 		}
+	}
+
+}
+
+void UpdateHit(GameObject& obj) {
+	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	if ((Play::IsColliding(obj, cat)) && gameState.catState == STATE_ATTACK) {
+		Play::ColourSprite(Play::GetSpriteName(obj.GetId()), Play::cRed); //makes it extremely slow 
 	}
 
 }
