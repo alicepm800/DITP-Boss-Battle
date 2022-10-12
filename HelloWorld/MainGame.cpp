@@ -234,6 +234,9 @@ void UpdateBoss() {
 					if (boss.right_facing == true) {
 						Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40}, 50, "");
 					}
+					else if (boss.right_facing == false){
+						Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 50, "");
+					}
 				if (boss.frame == 15) {
 					boss.animSpeed = 0.0f;
 				//	gameState.bossState = STATE_TEST_IDLE;
