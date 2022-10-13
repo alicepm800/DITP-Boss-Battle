@@ -24,6 +24,7 @@ enum BossState {
 	STATE_BOSS_CHASE,
 	STATE_BOSS_CLEAVE,
 	STATE_BOSS_HIT,
+	STATE_BOSS_SMASH,
 	STATE_TEST_IDLE
 	
 };
@@ -39,6 +40,9 @@ struct GameState {
 	int catTargetPositionY = 0;
 	int cleaveCooldown = 0;
 	int hitBossCooldown = 5;
+	int bossHealth = 500;
+	int playerHealth = 4; //if boss hit with fireball or minion remove quarter of heart, if boss hit with cleave remove half of heart
+	int phase = 1;
 	
 	
 	CatState catState = STATE_APPEAR;
@@ -76,6 +80,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("boss_walk", 145, 120);
 	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
 	Play::MoveSpriteOrigin("boss_hit", 145, 120);
+	Play::MoveSpriteOrigin("boss_smash", 145, 120);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "battle_theme" );
 
@@ -176,7 +181,7 @@ void UpdateCat() {
 	
 	DrawObjectXFlipped(cat);
 	Play::UpdateGameObject(cat);	
-	UpdateSuccessfulHit();
+	
 	
 }
 
@@ -193,13 +198,10 @@ void UpdateBoss() {
 		case STATE_BOSS_IDLE:
 			Play::SetSprite(boss, "boss_idle", 0.12f);
 			gameState.bossIdleCooldown--;
-			if ((Play::IsColliding(boss, cat)) && (gameState.catState == STATE_ATTACK)) {
-				gameState.bossState = STATE_BOSS_HIT;
-				
-			}
+			
 			if (gameState.bossIdleCooldown <= 0) {
 				gameState.fireBallsCreated = 0;
-				gameState.bossState = STATE_BOSS_CASTING;
+				gameState.bossState = STATE_BOSS_SMASH; //change this back to STATE_BOSS_CASTING after you have sorted the mechanic for STATE_SMASH
 				gameState.castingCooldown = 30;
 				gameState.fireBallCooldown = 25;
 				
@@ -252,9 +254,7 @@ void UpdateBoss() {
 			Play::SetSprite(boss, "boss_walk", 0.25f);
 			Play::PointGameObject(boss, 1.5f, cat.pos.x, cat.pos.y);
 			if (Play::IsColliding(boss, cat)) {
-				if (gameState.catState == STATE_ATTACK) {
-					gameState.bossState = STATE_BOSS_HIT;
-				}
+			
 				
 				gameState.cleaveCooldown = 25;
 				gameState.bossState = STATE_BOSS_CLEAVE; //randomise attacks, so put if randomiser is below 10 due cleave, if between 10 and 20 do spell if phase 1 etc...
@@ -285,24 +285,40 @@ void UpdateBoss() {
 			}
 			break;
 
+		case STATE_BOSS_SMASH:
+			Play::SetSprite(boss, "boss_smash", 0.1f);
+			
+			if (boss.frame == 1) {
+				gameState.catTargetPositionX = cat.pos.x;
+				gameState.catTargetPositionY = cat.pos.y;
+			}
+				Play::PointGameObject(boss, 5, gameState.catTargetPositionX, gameState.catTargetPositionY);
+			
+			
+			if ((boss.pos.x == gameState.catTargetPositionX) && (boss.pos.y == gameState.catTargetPositionY)) {
+				boss.velocity = { 0, 0 };
+			}
+			
+			if (boss.frame == 18) {
+				gameState.bossState = STATE_TEST_IDLE;
+			}
+			break;
+
 		case STATE_TEST_IDLE:
 			Play::SetSprite(boss, "boss_idle", 0.12f);
+			boss.velocity = { 0,0 };
 			break;
 
-		case STATE_BOSS_HIT: 
-		 //add stars and slash marks instead at end of cat sword using how playbuffer did the stars coming out of coin
-			gameState.hitBossCooldown--;
-			if (boss.frame == 5) {
-				gameState.bossState = STATE_BOSS_CHASE;
-			}
+		
 
 			
-			break;
+			
 	}
 	
 	DrawObjectXFlipped(boss); 
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
+	UpdateSuccessfulHit();
 	
 }
 
@@ -411,9 +427,6 @@ void UpdateSuccessfulHit() {
 		}
 	}
 	
-
-
-
 }
 
 
