@@ -61,7 +61,8 @@ enum GameObjectType {
 	TYPE_FIREBALL,
 	TYPE_SWORD,
 	TYPE_BOSS_HIT,
-	TYPE_MINION
+	TYPE_MINION,
+	TYPE_MINION_SPAWN
 };
 
 void UpdateCat();
@@ -70,6 +71,7 @@ void UpdateFireball();
 void UpdateSuccessfulHit();
 void DrawObjectXFlipped(GameObject& obj);
 void UpdateMinion();
+void UpdateMinionSpawn();
 
 
 
@@ -87,6 +89,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("boss_hit", 145, 120);
 	Play::MoveSpriteOrigin("boss_smash", 145, 120);
 	Play::MoveSpriteOrigin("minion_idle", 140, 150);
+	Play::MoveSpriteOrigin("minion_spawn", 50, 70);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "battle_theme" );
 
@@ -184,12 +187,10 @@ void UpdateCat() {
 		break;
 		
 	}
-	
 	UpdateMinion();
+	UpdateMinionSpawn();
 	DrawObjectXFlipped(cat);
-	Play::UpdateGameObject(cat);	
-	
-	
+	Play::UpdateGameObject(cat);		
 }
 
 void UpdateBoss() {
@@ -325,6 +326,8 @@ void UpdateBoss() {
 			gameState.minionCooldown--;
 			if (gameState.minionCooldown <= 0) {
 				int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 25, "minion_idle");
+				GameObject& minion = Play::GetGameObject(minion_id);
+				Play::CreateGameObject(TYPE_MINION_SPAWN, minion.pos, 5, "minion_spawn");
 				gameState.minionsCreated++;
 				gameState.minionCooldown = 25;
 			}
@@ -443,10 +446,37 @@ void UpdateMinion() {
 
 	for (int minion_id : minion_list) {
 		GameObject& minion = Play::GetGameObject(minion_id);
+		//int minion_spawn_id = Play::CreateGameObject(TYPE_MINION_SPAWN, minion.pos, 5, "minion_spawn");
+		//GameObject& minion_spawn = Play::GetGameObject(minion_spawn_id);
+
+
 		minion.animSpeed = 0.15f;
 		minion.scale = 2.0f;
+
+		//minion_spawn.animSpeed = 0.2f; //animation not updating 
+		
 		Play::UpdateGameObject(minion);
 		Play::DrawObjectRotated(minion);
+		//Play::UpdateGameObject(minion_spawn);
+		//Play::DrawObjectRotated(minion_spawn);
+	}
+}
+
+void UpdateMinionSpawn() { //had to create separate function for magic spawn effect so animations would keep on udpating, did not update whilst it UpdateMinion()
+	std::vector<int>minion_spawn_list = Play::CollectGameObjectIDsByType(TYPE_MINION_SPAWN);
+
+	for (int minion_spawn_id : minion_spawn_list) {
+		GameObject& minion_spawn = Play::GetGameObject(minion_spawn_id);
+
+		minion_spawn.animSpeed = 0.2f;
+		Play::UpdateGameObject(minion_spawn);
+		Play::DrawObject(minion_spawn);
+
+		if (minion_spawn.frame == 10) {
+			Play::DestroyGameObject(minion_spawn_id);
+		}
+
+		
 	}
 }
 
