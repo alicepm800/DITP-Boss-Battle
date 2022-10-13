@@ -446,19 +446,11 @@ void UpdateMinion() {
 
 	for (int minion_id : minion_list) {
 		GameObject& minion = Play::GetGameObject(minion_id);
-		//int minion_spawn_id = Play::CreateGameObject(TYPE_MINION_SPAWN, minion.pos, 5, "minion_spawn");
-		//GameObject& minion_spawn = Play::GetGameObject(minion_spawn_id);
-
-
 		minion.animSpeed = 0.15f;
 		minion.scale = 2.0f;
-
-		//minion_spawn.animSpeed = 0.2f; //animation not updating 
-		
+		Play::PointGameObject(minion, 1, cat.pos.x, cat.pos.y);
 		Play::UpdateGameObject(minion);
-		Play::DrawObjectRotated(minion);
-		//Play::UpdateGameObject(minion_spawn);
-		//Play::DrawObjectRotated(minion_spawn);
+		DrawObjectXFlipped(minion);
 	}
 }
 
@@ -467,16 +459,12 @@ void UpdateMinionSpawn() { //had to create separate function for magic spawn eff
 
 	for (int minion_spawn_id : minion_spawn_list) {
 		GameObject& minion_spawn = Play::GetGameObject(minion_spawn_id);
-
 		minion_spawn.animSpeed = 0.2f;
 		Play::UpdateGameObject(minion_spawn);
 		Play::DrawObject(minion_spawn);
-
 		if (minion_spawn.frame == 10) {
 			Play::DestroyGameObject(minion_spawn_id);
-		}
-
-		
+		}	
 	}
 }
 
@@ -497,9 +485,6 @@ void UpdateSuccessfulHit() {
 	}
 	
 }
-
-
-
 
 int MainGameExit(void)
 {
