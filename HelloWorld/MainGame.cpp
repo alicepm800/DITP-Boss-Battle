@@ -46,6 +46,8 @@ struct GameState {
 	int phase = 2;
 	int minionsCreated = 0;
 	int minionCooldown = 0;
+	int minionMoveCooldown = 0;
+	bool hasBeenAttacked = false;
 	
 	
 	CatState catState = STATE_APPEAR;
@@ -88,7 +90,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
 	Play::MoveSpriteOrigin("boss_hit", 145, 120);
 	Play::MoveSpriteOrigin("boss_smash", 145, 120);
-	Play::MoveSpriteOrigin("minion_idle", 140, 150);
+	Play::MoveSpriteOrigin("minion_move", 140, 150);
 	Play::MoveSpriteOrigin("minion_spawn", 50, 70);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "battle_theme" );
@@ -325,11 +327,12 @@ void UpdateBoss() {
 		case STATE_BOSS_SUMMON: 
 			gameState.minionCooldown--;
 			if (gameState.minionCooldown <= 0) {
-				int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 25, "minion_idle");
+				int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 25, "minion_move");
 				GameObject& minion = Play::GetGameObject(minion_id);
 				Play::CreateGameObject(TYPE_MINION_SPAWN, minion.pos, 5, "minion_spawn");
 				gameState.minionsCreated++;
 				gameState.minionCooldown = 25;
+				gameState.minionMoveCooldown = 45;
 			}
 
 			if (gameState.minionsCreated == 5) {
@@ -443,12 +446,25 @@ void UpdateMinion() {
 	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
 	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
 	std::vector<int>minion_list = Play::CollectGameObjectIDsByType(TYPE_MINION);
+	
+	
 
 	for (int minion_id : minion_list) {
+		gameState.minionMoveCooldown--;
 		GameObject& minion = Play::GetGameObject(minion_id);
 		minion.animSpeed = 0.15f;
 		minion.scale = 2.0f;
-		Play::PointGameObject(minion, 1, cat.pos.x, cat.pos.y);
+		if (gameState.minionMoveCooldown <= 0) {
+			if ((gameState.catState == STATE_ATTACK) && (Play::IsColliding(cat, minion))) { //issue is that all minions are effected, instead create a state machine within updateminion to move to minion death and remove global hasBeenAttacked
+				gameState.hasBeenAttacked = true;	
+			}
+			if(gameState.hasBeenAttacked == true) {
+				minion.velocity = { 0, 0 };		
+			}
+			else if (gameState.hasBeenAttacked == false) {
+				Play::PointGameObject(minion, 1, cat.pos.x, cat.pos.y);
+			}
+		}
 		Play::UpdateGameObject(minion);
 		DrawObjectXFlipped(minion);
 	}
