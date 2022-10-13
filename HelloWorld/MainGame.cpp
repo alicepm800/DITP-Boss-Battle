@@ -25,6 +25,7 @@ enum BossState {
 	STATE_BOSS_CLEAVE,
 	STATE_BOSS_HIT,
 	STATE_BOSS_SMASH,
+	STATE_BOSS_SUMMON,
 	STATE_TEST_IDLE
 	
 };
@@ -42,7 +43,9 @@ struct GameState {
 	int hitBossCooldown = 5;
 	int bossHealth = 500;
 	int playerHealth = 4; //if boss hit with fireball or minion remove quarter of heart, if boss hit with cleave remove half of heart
-	int phase = 1;
+	int phase = 2;
+	int minionsCreated = 0;
+	int minionCooldown = 0;
 	
 	
 	CatState catState = STATE_APPEAR;
@@ -57,7 +60,8 @@ enum GameObjectType {
 	TYPE_BOSS,
 	TYPE_FIREBALL,
 	TYPE_SWORD,
-	TYPE_BOSS_HIT
+	TYPE_BOSS_HIT,
+	TYPE_MINION
 };
 
 void UpdateCat();
@@ -65,6 +69,7 @@ void UpdateBoss();
 void UpdateFireball();
 void UpdateSuccessfulHit();
 void DrawObjectXFlipped(GameObject& obj);
+void UpdateMinion();
 
 
 
@@ -81,6 +86,7 @@ void MainGameEntry( PLAY_IGNORE_COMMAND_LINE ){
 	Play::MoveSpriteOrigin("boss_cleave", 145, 120);
 	Play::MoveSpriteOrigin("boss_hit", 145, 120);
 	Play::MoveSpriteOrigin("boss_smash", 145, 120);
+	Play::MoveSpriteOrigin("minion_idle", 140, 150);
 	Play::LoadBackground( "Data\\Backgrounds\\dungeonbackground.png" );
 	//Play::StartAudioLoop( "battle_theme" );
 
@@ -179,6 +185,7 @@ void UpdateCat() {
 		
 	}
 	
+	UpdateMinion();
 	DrawObjectXFlipped(cat);
 	Play::UpdateGameObject(cat);	
 	
@@ -201,10 +208,11 @@ void UpdateBoss() {
 			
 			if (gameState.bossIdleCooldown <= 0) {
 				gameState.fireBallsCreated = 0;
-				gameState.bossState = STATE_BOSS_SMASH; //change this back to STATE_BOSS_CASTING after you have sorted the mechanic for STATE_SMASH
+				gameState.minionsCreated = 0;
+				gameState.bossState = STATE_BOSS_CASTING; //change this to an if statement for when you implement phases 
 				gameState.castingCooldown = 30;
 				gameState.fireBallCooldown = 25;
-				
+				gameState.minionCooldown = 30;
 			}
 
 			break;
@@ -213,12 +221,16 @@ void UpdateBoss() {
 			boss.velocity = { 0, 0 };
 			gameState.castingCooldown--;
 			if (gameState.castingCooldown <= 0) {
-				gameState.bossState = STATE_BOSS_FIREBALL;
+				if (gameState.phase == 1) {
+					gameState.bossState = STATE_BOSS_FIREBALL;
+				}
+				if (gameState.phase == 2) {
+					gameState.bossState = STATE_BOSS_SUMMON;
+				}
 			}
 			break;
 
 		case STATE_BOSS_FIREBALL:
-			Play::SetSprite(boss, "boss_spell", 0.12f);
 			gameState.fireBallCooldown--;
 			if (gameState.fireBallCooldown <= 0) {
 				gameState.catTargetPositionX = cat.pos.x; 
@@ -235,7 +247,7 @@ void UpdateBoss() {
 					GameObject& fireball = Play::GetGameObject(id_fireball);
 					Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY);
 					gameState.fireBallsCreated++;
-					gameState.fireBallCooldown = 25;
+					gameState.fireBallCooldown = 35;
 				}
 
 			}
@@ -287,7 +299,6 @@ void UpdateBoss() {
 
 		case STATE_BOSS_SMASH:
 			Play::SetSprite(boss, "boss_smash", 0.1f);
-			
 			if (boss.frame == 1) {
 				boss.velocity = { 0,0 };
 				gameState.catTargetPositionX = cat.pos.x;
@@ -300,14 +311,28 @@ void UpdateBoss() {
 				 }
 				 else if ((boss.pos.x != gameState.catTargetPositionX) && (boss.pos.y != gameState.catTargetPositionY)) {
 
-					 Play::PointGameObject(boss, 8, gameState.catTargetPositionX, gameState.catTargetPositionY);
+					 Play::PointGameObject(boss, 15, gameState.catTargetPositionX, gameState.catTargetPositionY);
 				 }
 			}
 		
 			if (boss.frame == 18) {
 				boss.velocity = { 0, 0 };
+				gameState.bossState = STATE_TEST_IDLE; //remember to change this 
+			}
+			break;
+
+		case STATE_BOSS_SUMMON: 
+			gameState.minionCooldown--;
+			if (gameState.minionCooldown <= 0) {
+				int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 25, "minion_idle");
+				gameState.minionsCreated++;
+				gameState.minionCooldown = 25;
+			}
+
+			if (gameState.minionsCreated == 5) {
 				gameState.bossState = STATE_TEST_IDLE;
 			}
+
 			break;
 
 		case STATE_TEST_IDLE:
@@ -397,10 +422,10 @@ void UpdateFireball() {
 	
 	for (int fireball_id : fireball_list) {
 		GameObject& fireball = Play::GetGameObject(fireball_id);
-		fireball.scale = 2.0f;
+		fireball.scale = 2.0f; 
 		fireball.animSpeed = 2.0f;	
 		Play::UpdateGameObject(fireball);
-		Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency
+		Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency, this is used to update scale
 
 		if (Play::IsColliding(fireball, cat)) {
 			Play::SetSprite(fireball, "explosion", 0.2f);
@@ -409,7 +434,20 @@ void UpdateFireball() {
 			}
 		}
 	}
+}
 
+void UpdateMinion() {
+	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
+	std::vector<int>minion_list = Play::CollectGameObjectIDsByType(TYPE_MINION);
+
+	for (int minion_id : minion_list) {
+		GameObject& minion = Play::GetGameObject(minion_id);
+		minion.animSpeed = 0.15f;
+		minion.scale = 2.0f;
+		Play::UpdateGameObject(minion);
+		Play::DrawObjectRotated(minion);
+	}
 }
 
 void UpdateSuccessfulHit() {
