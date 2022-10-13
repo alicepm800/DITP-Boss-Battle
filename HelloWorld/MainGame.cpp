@@ -52,13 +52,14 @@ enum GameObjectType {
 	TYPE_CAT,
 	TYPE_BOSS,
 	TYPE_FIREBALL,
-	TYPE_SWORD
+	TYPE_SWORD,
+	TYPE_BOSS_HIT
 };
 
 void UpdateCat();
 void UpdateBoss();
 void UpdateFireball();
-void UpdateHit(GameObject& obj);
+void UpdateSuccessfulHit();
 void DrawObjectXFlipped(GameObject& obj);
 
 
@@ -149,10 +150,19 @@ void UpdateCat() {
 			Play::SetSprite(cat, "cat_attack", 0.2f); 
 			if (Play::IsColliding(boss, cat)) {
 				Play::PlayAudio("hit");
+				if (cat.right_facing == true) {
+					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack"); //put this in boss hit so it lasts longer
+				}
+				else if (cat.right_facing == false) {
+					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack");
+				}
+				
 			}
 			if (cat.frame == 4) {  //put in this statement the number of health decreased if there is a collision 
+				
 				gameState.catState = STATE_IDLE;
 				gameState.attackCooldown = 8;
+
 			}
 		}
 		else {
@@ -163,8 +173,11 @@ void UpdateCat() {
 		break;
 		
 	}
+	
 	DrawObjectXFlipped(cat);
 	Play::UpdateGameObject(cat);	
+	UpdateSuccessfulHit();
+	
 }
 
 void UpdateBoss() {
@@ -265,7 +278,7 @@ void UpdateBoss() {
 				}
 				if (boss.frame == 15) {
 					Play::DestroyGameObjectsByType(TYPE_SWORD);
-					gameState.bossIdleCooldown = 100;
+					gameState.bossIdleCooldown = 50;
 					gameState.bossState = STATE_BOSS_IDLE;
 				
 				}
@@ -379,6 +392,27 @@ void UpdateFireball() {
 			}
 		}
 	}
+
+}
+
+void UpdateSuccessfulHit() {
+	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
+	std::vector<int>successful_hit_list = Play::CollectGameObjectIDsByType(TYPE_BOSS_HIT);
+
+	for (int successful_hit_id : successful_hit_list) {
+		GameObject& successful_hit = Play::GetGameObject(successful_hit_id);
+		successful_hit.animSpeed = 0.5f;
+		Play::DrawObject(successful_hit);
+		Play::UpdateGameObject(successful_hit);
+
+		if (successful_hit.frame == 5) {
+			Play::DestroyGameObject(successful_hit_id);
+		}
+	}
+	
+
+
 
 }
 
