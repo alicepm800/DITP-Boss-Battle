@@ -289,17 +289,23 @@ void UpdateBoss() {
 			Play::SetSprite(boss, "boss_smash", 0.1f);
 			
 			if (boss.frame == 1) {
+				boss.velocity = { 0,0 };
 				gameState.catTargetPositionX = cat.pos.x;
 				gameState.catTargetPositionY = cat.pos.y;
 			}
-				Play::PointGameObject(boss, 5, gameState.catTargetPositionX, gameState.catTargetPositionY);
 			
-			
-			if ((boss.pos.x == gameState.catTargetPositionX) && (boss.pos.y == gameState.catTargetPositionY)) {
-				boss.velocity = { 0, 0 };
+			if (boss.frame >= 5) {
+				 if ((boss.pos.x == gameState.catTargetPositionX) && (boss.pos.y == gameState.catTargetPositionY)) {
+					boss.velocity = { 0, 0 }; //flipping messes up here!
+				 }
+				 else if ((boss.pos.x != gameState.catTargetPositionX) && (boss.pos.y != gameState.catTargetPositionY)) {
+
+					 Play::PointGameObject(boss, 8, gameState.catTargetPositionX, gameState.catTargetPositionY);
+				 }
 			}
-			
+		
 			if (boss.frame == 18) {
+				boss.velocity = { 0, 0 };
 				gameState.bossState = STATE_TEST_IDLE;
 			}
 			break;
@@ -307,12 +313,7 @@ void UpdateBoss() {
 		case STATE_TEST_IDLE:
 			Play::SetSprite(boss, "boss_idle", 0.12f);
 			boss.velocity = { 0,0 };
-			break;
-
-		
-
-			
-			
+			break;		
 	}
 	
 	DrawObjectXFlipped(boss); 
