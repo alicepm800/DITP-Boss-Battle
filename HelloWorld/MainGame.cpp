@@ -26,8 +26,7 @@ enum BossState {
 	STATE_BOSS_HIT,
 	STATE_BOSS_SMASH,
 	STATE_BOSS_SUMMON,
-	STATE_TEST_IDLE
-
+	STATE_BOSS_DEAD,
 };
 
 struct GameState {
@@ -72,6 +71,7 @@ void UpdateSuccessfulHit();
 void DrawObjectXFlipped(GameObject& obj);
 void UpdateMinion();
 void UpdateMinionSpawn();
+void BossDead();
 
 
 
@@ -90,6 +90,7 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::MoveSpriteOrigin("minion_move", 140, 150);
 	Play::MoveSpriteOrigin("minion_spawn", 50, 70);
 	Play::MoveSpriteOrigin("minion_death", 140, 150);
+	Play::MoveSpriteOrigin("boss_dead", 145, 120);
 	Play::LoadBackground("Data\\Backgrounds\\dungeonbackground.png");
 	//Play::StartAudioLoop( "battle_theme" );
 
@@ -282,8 +283,6 @@ void UpdateBoss() {
 
 			}
 		}
-
-
 		break;
 
 	case STATE_BOSS_CHASE:
@@ -364,16 +363,31 @@ void UpdateBoss() {
 
 		break;
 
-	case STATE_TEST_IDLE:
-		Play::SetSprite(boss, "boss_idle", 0.12f);
+	case STATE_BOSS_DEAD:
+		Play::SetSprite(boss, "boss_dead", 0.25f);
 		boss.velocity = { 0,0 };
+		if (boss.frame == 22) {
+			boss.animSpeed = 0;
+		}
 		break;
 	}
 
-	DrawObjectXFlipped(boss);
+	BossDead();
+	if ((gameState.bossState == STATE_BOSS_DEAD) && (boss.frame == 22)) {
+		Play::DrawObjectTransparent(boss, 0.0f);
+	}
+	else {
+		DrawObjectXFlipped(boss);
+	}
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
 	UpdateSuccessfulHit();
+}
+
+void BossDead() {
+	if (gameState.bossHealth <= 0) {
+		gameState.bossState = STATE_BOSS_DEAD;
+	}
 }
 
 void SetUpFlipMatrix(bool face_right, Matrix2D& flipMat, Vector2D pos) {
