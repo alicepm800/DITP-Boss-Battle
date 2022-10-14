@@ -41,12 +41,13 @@ struct GameState {
 	int catTargetPositionY = 0;
 	int cleaveCooldown = 0;
 	int hitBossCooldown = 5;
-	int bossHealth = 500; //you already have boss health that's why you had a bug
-	int playerHealth = 4; //if boss hit with fireball or minion remove quarter of heart, if boss hit with cleave remove half of heart
-	int phase = 2;
+	int bossHealth = 0; //you already have boss health that's why you had a bug
+	int playerHealth = 0; //if boss hit with fireball or minion remove quarter of heart, if boss hit with cleave remove half of heart
+	int phase = 0;
 	int minionsCreated = 0;
 	int minionCooldown = 0;
 	int minionMoveCooldown = 0;
+	int bossChaseCooldown = 0;
 
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -116,7 +117,8 @@ void UpdateCat() {
 
 	case STATE_APPEAR:
 		gameState.catState = STATE_IDLE;
-		//gameState.bossHealth += 500;
+		gameState.bossHealth = 500;
+		gameState.phase = 1;
 		break;
 
 	case STATE_IDLE:
@@ -134,7 +136,6 @@ void UpdateCat() {
 		break;
 
 	case STATE_RUN:
-
 		if (Play::KeyDown(VK_LEFT)) {
 			Play::SetSprite(cat, "cat_run", 0.2f);
 			cat.velocity = { -5, 0 };
@@ -167,17 +168,17 @@ void UpdateCat() {
 				Play::PlayAudio("hit");
 				if (cat.right_facing == true) {
 					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack");
-					//	gameState.bossHealth -= 50; //fixed issue, add this after code review
-					//	if (gameState.bossHealth <= 250) {
-					//		gameState.phase = 2;
-					//	}
+						gameState.bossHealth -= 50; //fixed issue, add this after code review
+						if (gameState.bossHealth <= 250) {
+							gameState.phase = 2;
+						}
 				}
 				else if (cat.right_facing == false) {
 					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack");
-					//	gameState.bossHealth -= 50;
-					//	if (gameState.bossHealth <= 250) {
-					//		gameState.phase = 2;
-					//	}
+						gameState.bossHealth -= 50;
+						if (gameState.bossHealth <= 250) {
+							gameState.phase = 2;
+						}
 				}
 
 			}
@@ -332,14 +333,15 @@ void UpdateBoss() {
 
 		if (boss.frame == 18) {
 			boss.velocity = { 0, 0 };
-			gameState.bossState = STATE_BOSS_CHASE; //remember to change this 
+			gameState.bossChaseCooldown = 120;
+			gameState.bossState = STATE_TEST_IDLE; 
 		}
 		break;
 
 	case STATE_BOSS_SUMMON:
 		gameState.minionCooldown--;
 		if (gameState.minionCooldown <= 0) {
-			int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 25, "minion_move");
+			int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 62, "minion_move");
 			GameObject& minion = Play::GetGameObject(minion_id);
 			Play::CreateGameObject(TYPE_MINION_SPAWN, minion.pos, 5, "minion_spawn");
 			gameState.minionsCreated++;
@@ -359,7 +361,7 @@ void UpdateBoss() {
 		break;
 	}
 
-	Play::DrawDebugText({ 50, 10 }, std::to_string(boss.velocity.x).c_str());
+	
 	DrawObjectXFlipped(boss);
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
@@ -482,7 +484,6 @@ void UpdateSuccessfulHit() {
 			Play::DestroyGameObject(successful_hit_id);
 		}
 	}
-
 }
 
 int MainGameExit(void)
