@@ -47,6 +47,7 @@ struct GameState {
 	int minionsCreated = 0;
 	int minionCooldown = 0;
 	int minionMoveCooldown = 0;
+	//int bossHealth = 0;
 	bool hasBeenAttacked = false;
 	
 	
@@ -118,6 +119,7 @@ void UpdateCat() {
 
 	case STATE_APPEAR:
 		gameState.catState = STATE_IDLE;
+		//gameState.bossHealth += 500;
 		break;
 
 	case STATE_IDLE:
@@ -167,10 +169,18 @@ void UpdateCat() {
 			if (Play::IsColliding(boss, cat)) {
 				Play::PlayAudio("hit");
 				if (cat.right_facing == true) {
-					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack"); //put this in boss hit so it lasts longer
+					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack");
+				//	gameState.bossHealth -= 50;
+				//	if (gameState.bossHealth <= 250) {
+				//		gameState.phase = 2;
+				//	}
 				}
 				else if (cat.right_facing == false) {
 					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack");
+				//	gameState.bossHealth -= 50;
+				//	if (gameState.bossHealth <= 250) {
+				//		gameState.phase = 2;
+				//	}
 				}
 				
 			}
@@ -272,7 +282,12 @@ void UpdateBoss() {
 			
 				
 				gameState.cleaveCooldown = 25;
-				gameState.bossState = STATE_BOSS_CLEAVE; //randomise attacks, so put if randomiser is below 10 due cleave, if between 10 and 20 do spell if phase 1 etc...
+				if (gameState.phase == 1) {
+					gameState.bossState = STATE_BOSS_CLEAVE; //randomise attacks, so put if randomiser is below 10 due cleave, if between 10 and 20 do spell if phase 1 etc...
+				} //FIX THIS  so cleaves also in phase 1, but after a timer boss starts casting
+				else if (gameState.phase == 2) {
+					gameState.bossState = STATE_BOSS_CASTING;
+				}
 			}
 			break;
 
@@ -320,7 +335,7 @@ void UpdateBoss() {
 		
 			if (boss.frame == 18) {
 				boss.velocity = { 0, 0 };
-				gameState.bossState = STATE_TEST_IDLE; //remember to change this 
+				gameState.bossState = STATE_BOSS_CHASE; //remember to change this 
 			}
 			break;
 
@@ -336,7 +351,7 @@ void UpdateBoss() {
 			}
 
 			if (gameState.minionsCreated == 5) {
-				gameState.bossState = STATE_TEST_IDLE;
+				gameState.bossState = STATE_BOSS_SMASH;
 			}
 
 			break;
