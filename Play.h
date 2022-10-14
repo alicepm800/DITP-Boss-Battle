@@ -1506,6 +1506,7 @@ struct GameObject
 	// new member variables
 	bool right_facing{ true };
 	bool has_attacked{ false };
+	bool has_been_attacked{ false };
 
 	// Add your own data members here if you want to
 	PLAY_ADD_GAMEOBJECT_MEMBERS
