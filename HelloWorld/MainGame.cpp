@@ -57,6 +57,7 @@ enum GameObjectType {
 	TYPE_NULL = -1,
 	TYPE_CAT,
 	TYPE_BOSS,
+	TYPE_HEART,
 	TYPE_FIREBALL,
 	TYPE_SWORD,
 	TYPE_BOSS_HIT,
@@ -66,6 +67,7 @@ enum GameObjectType {
 
 void UpdateCat();
 void UpdateBoss();
+void UpdateHealth();
 void UpdateFireball();
 void UpdateSuccessfulHit();
 void DrawObjectXFlipped(GameObject& obj);
@@ -91,21 +93,25 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::MoveSpriteOrigin("minion_spawn", 50, 70);
 	Play::MoveSpriteOrigin("minion_death", 140, 150);
 	Play::MoveSpriteOrigin("boss_dead", 145, 120);
-	Play::LoadBackground("Data\\Backgrounds\\dungeonbackground.png");
 	//Play::StartAudioLoop( "battle_theme" );
+	Play::LoadBackground("Data\\Backgrounds\\dungeonbackground.png");
 
-	int id_cat = Play::CreateGameObject(TYPE_CAT, { 500, 500 }, 50, "cat_idle");
-	GameObject& cat = Play::GetGameObject(id_cat);
-
-	int id_boss = Play::CreateGameObject(TYPE_BOSS, { 750, 250 }, 120, "boss_idle");
-
+	Play::CreateGameObject(TYPE_CAT, { 500, 500 }, 50, "cat_idle");
+	Play::CreateGameObject(TYPE_BOSS, { 750, 250 }, 120, "boss_idle");
+	int heart_id = Play::CreateGameObject(TYPE_HEART, { 50 , 25 }, 0, "full_health");
+	GameObject& heart = Play::GetGameObject(heart_id);
+	heart.scale = 4.0f;
 }
+
+
 
 
 bool MainGameUpdate(float elapsedTime) {
 	Play::DrawBackground();
+	//Play::DrawFontText("69px", "LIVES", { DISPLAY_WIDTH / 1.21f,  50 }, Play::CENTRE);
 	UpdateCat();
 	UpdateBoss();
+	UpdateHealth();
 	Play::PresentDrawingBuffer();
 	return Play::KeyDown(VK_ESCAPE);
 }
@@ -117,8 +123,10 @@ void UpdateCat() {
 
 	case STATE_APPEAR:
 		gameState.catState = STATE_IDLE;
+		gameState.playerHealth = 4;
 		gameState.bossHealth = 500;
 		gameState.phase = 1;
+		gameState.catState = STATE_IDLE;
 		break;
 
 	case STATE_IDLE:
@@ -263,6 +271,7 @@ void UpdateBoss() {
 			if (boss.right_facing == true) {
 				int id_fireball = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x + 150, boss.pos.y - 40 }, 10, "fireball");
 				GameObject& fireball = Play::GetGameObject(id_fireball);
+				Play::PlayAudio("hit");
 				Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY);
 				gameState.fireBallsCreated++;
 				gameState.fireBallCooldown = 25;
@@ -303,10 +312,19 @@ void UpdateBoss() {
 
 			if (boss.frame == 10) {//&& inivisible game object is colliding with cat then reduce cat's health and play hit sounds and animation 
 				if (boss.right_facing == true) {
-					Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40 }, 50, "");
+					int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40 }, 50, "");
+					GameObject& sword = Play::GetGameObject(sword_id);
+					if (Play::IsColliding(cat, sword)) {
+						gameState.playerHealth--;
+					}
+					
 				}
 				else if (boss.right_facing == false) {
-					Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 50, "");
+					int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 50, "");
+					GameObject& sword = Play::GetGameObject(sword_id);
+					if (Play::IsColliding(cat, sword)) {
+						gameState.playerHealth--;
+					}
 				}
 			}
 			if (boss.frame == 15) {
@@ -364,7 +382,7 @@ void UpdateBoss() {
 		break;
 
 	case STATE_BOSS_DEAD:
-		Play::SetSprite(boss, "boss_dead", 0.25f);
+		Play::SetSprite(boss, "boss_dead", 0.15f);
 		boss.velocity = { 0,0 };
 		if (boss.frame == 22) {
 			boss.animSpeed = 0;
@@ -382,6 +400,26 @@ void UpdateBoss() {
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
 	UpdateSuccessfulHit();
+}
+void UpdateHealth() {
+		GameObject& heart = Play::GetGameObjectByType(TYPE_HEART);
+		Play::DrawObjectRotated(heart);
+
+		if (gameState.playerHealth == 3) {
+			Play::SetSprite(heart, "three_quarters_health", 0.0f);
+		}
+
+		if (gameState.playerHealth == 2) {
+			Play::SetSprite(heart, "half_health", 0.0f);
+		}
+
+		if (gameState.playerHealth == 1) {
+			Play::SetSprite(heart, "quarter_health", 0.0f);
+		}
+
+
+		
+	
 }
 
 void BossDead() {
@@ -436,6 +474,7 @@ void UpdateFireball() {
 
 		if (Play::IsColliding(fireball, cat)) {
 			Play::SetSprite(fireball, "explosion", 0.2f);
+			gameState.playerHealth--;
 			if (fireball.frame == 10) {
 				Play::DestroyGameObject(fireball_id);
 			}
