@@ -218,7 +218,6 @@ void UpdateBoss() {
 
 		if (gameState.bossIdleCooldown <= 0) {
 			gameState.fireBallsCreated = 0;
-			gameState.minionsCreated = 0;
 			gameState.bossState = STATE_BOSS_CASTING; //change this to an if statement for when you implement phases 
 			gameState.castingCooldown = 30;
 			gameState.fireBallCooldown = 25;
@@ -229,6 +228,7 @@ void UpdateBoss() {
 	case STATE_BOSS_CASTING:
 		Play::SetSprite(boss, "boss_spell", 0.12f);
 		boss.velocity = { 0, 0 };
+		gameState.minionsCreated = 0;
 		gameState.castingCooldown--;
 		if (gameState.castingCooldown <= 0) {
 			if (gameState.phase == 1) {
@@ -321,8 +321,8 @@ void UpdateBoss() {
 		}
 
 		if (boss.frame >= 5) {
-			if ((boss.pos.x == gameState.catTargetPositionX) && (boss.pos.y == gameState.catTargetPositionY)) {
-				boss.velocity = { 0, 0 }; //flipping messes up here!
+			if ((boss.pos.x <= gameState.catTargetPositionX + 10) && (boss.pos.y <= gameState.catTargetPositionY +10)) {
+				boss.velocity = { 0, 0 }; 
 			}
 			else if ((boss.pos.x != gameState.catTargetPositionX) || (boss.pos.y != gameState.catTargetPositionY)) {
 
@@ -359,6 +359,7 @@ void UpdateBoss() {
 		break;
 	}
 
+	Play::DrawDebugText({ 50, 10 }, std::to_string(boss.velocity.x).c_str());
 	DrawObjectXFlipped(boss);
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
@@ -388,51 +389,12 @@ void DrawObjectXFlipped(GameObject& obj) {
 	Matrix2D flipMat = MatrixIdentity();
 
 	if (obj.velocity.x < 0) {
-		//flipMat.row[0].x = -2.0f;
-		//flipMat.row[1].y = 2.0f;
 		obj.right_facing = false;
 	}
-	else if (obj.velocity.x > 0) {
-		//flipMat.row[0].x = 2.0f;
-		//flipMat.row[1].y = 2.0f;
+	else if (obj.velocity.x > 0) {	
 		obj.right_facing = true;
 	}
-	//flipMat.row[2].x = obj.pos.x;
-	//flipMat.row[2].y = obj.pos.y;
-	//when game object is idle
-	if (obj.velocity.x == 0 && obj.velocity.y == 0) {
-		
-	}
-	//when game object is moving up
-	/*if (obj.velocity.y < 0) {
-		if (obj.right_facing == false) {
-			flipMat.row[0].x = -2.0f;
-			flipMat.row[1].y = 2.0f;
-			flipMat.row[2].x = obj.pos.x;
-			flipMat.row[2].y = obj.pos.y;
-		}
-		else {
-			flipMat.row[0].x = 2.0f;
-			flipMat.row[1].y = 2.0f;
-			flipMat.row[2].x = obj.pos.x;
-			flipMat.row[2].y = obj.pos.y;
-		}
-	}
-	//when game object is moving down
-	if (obj.velocity.y > 0) {
-		if (obj.right_facing == false) {
-			flipMat.row[0].x = -2.0f;
-			flipMat.row[1].y = 2.0f;
-			flipMat.row[2].x = obj.pos.x;
-			flipMat.row[2].y = obj.pos.y;
-		}
-		else {
-			flipMat.row[0].x = 2.0f;
-			flipMat.row[1].y = 2.0f;
-			flipMat.row[2].x = obj.pos.x;
-			flipMat.row[2].y = obj.pos.y;
-		}
-	}*/
+	
 	SetUpFlipMatrix(obj.right_facing, flipMat, obj.pos);
 	Play::DrawSpriteTransformed(obj.spriteId, flipMat, obj.frame);
 }
