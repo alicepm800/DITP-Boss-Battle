@@ -41,13 +41,12 @@ struct GameState {
 	int catTargetPositionY = 0;
 	int cleaveCooldown = 0;
 	int hitBossCooldown = 5;
-	int bossHealth = 0; //you already have boss health that's why you had a bug
+	int bossHealth = 0; 
 	int playerHealth = 0; //if boss hit with fireball or minion remove quarter of heart, if boss hit with cleave remove half of heart
 	int phase = 0;
 	int minionsCreated = 0;
 	int minionCooldown = 0;
 	int minionMoveCooldown = 0;
-	int bossChaseCooldown = 0;
 
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -219,10 +218,24 @@ void UpdateBoss() {
 
 		if (gameState.bossIdleCooldown <= 0) {
 			gameState.fireBallsCreated = 0;
-			gameState.bossState = STATE_BOSS_CASTING; //change this to an if statement for when you implement phases 
 			gameState.castingCooldown = 30;
 			gameState.fireBallCooldown = 25;
 			gameState.minionCooldown = 30;
+			if (gameState.phase == 1) {
+				gameState.bossState = STATE_BOSS_CASTING;
+			}
+			else if ((gameState.phase == 2) && (boss.has_cleaved_phase_two == true) && (gameState.minionsCreated > 0)) {
+				gameState.bossState = STATE_BOSS_SMASH;
+				boss.has_cleaved_phase_two = false;
+			}
+			else if ((gameState.phase == 2) && (boss.has_cleaved_phase_two == true) && (gameState.minionsCreated <= 0)) {
+				gameState.bossState = STATE_BOSS_CASTING;
+				boss.has_cleaved_phase_two = false;
+
+			}
+			else if ((gameState.phase == 2) && (boss.has_cleaved_phase_two == false)){
+				gameState.bossState = STATE_BOSS_CHASE;
+			}
 		}
 
 		break;
@@ -277,20 +290,13 @@ void UpdateBoss() {
 		Play::SetSprite(boss, "boss_walk", 0.25f);
 		Play::PointGameObject(boss, 1.5f, cat.pos.x, cat.pos.y);
 		if (Play::IsColliding(boss, cat)) {
-
-
 			gameState.cleaveCooldown = 25;
-			if (gameState.phase == 1) {
-				gameState.bossState = STATE_BOSS_CLEAVE; //randomise attacks, so put if randomiser is below 10 due cleave, if between 10 and 20 do spell if phase 1 etc...
-			} //FIX THIS  so cleaves also in phase 1, but after a timer boss starts casting
-			else if (gameState.phase == 2) {
-				gameState.bossState = STATE_BOSS_CASTING;
-			}
+			gameState.bossState = STATE_BOSS_CLEAVE; 
 		}
 		break;
 
 	case STATE_BOSS_CLEAVE:
-		// include warning sound effect
+		// include warning sound effects for all prepares for attacks
 		boss.velocity = { 0, 0 };
 		gameState.cleaveCooldown--;
 		if (gameState.cleaveCooldown <= 0) {
@@ -306,7 +312,10 @@ void UpdateBoss() {
 			}
 			if (boss.frame == 15) {
 				Play::DestroyGameObjectsByType(TYPE_SWORD);
-				gameState.bossIdleCooldown = 50;
+				gameState.bossIdleCooldown = 120;
+				if (gameState.phase == 2) {
+					boss.has_cleaved_phase_two = true;
+				}
 				gameState.bossState = STATE_BOSS_IDLE;
 
 			}
@@ -333,8 +342,8 @@ void UpdateBoss() {
 
 		if (boss.frame == 18) {
 			boss.velocity = { 0, 0 };
-			gameState.bossChaseCooldown = 120;
-			gameState.bossState = STATE_TEST_IDLE; 
+			gameState.bossIdleCooldown = 120;
+			gameState.bossState = STATE_BOSS_IDLE; 
 		}
 		break;
 
@@ -361,12 +370,10 @@ void UpdateBoss() {
 		break;
 	}
 
-	
 	DrawObjectXFlipped(boss);
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
 	UpdateSuccessfulHit();
-
 }
 
 void SetUpFlipMatrix(bool face_right, Matrix2D& flipMat, Vector2D pos) {
@@ -446,6 +453,7 @@ void UpdateMinion() {
 			minion.velocity = { 0,0 };
 			if (minion.frame == 12) {
 				Play::DestroyGameObject(minion_id); //add in reduce transparency over time, when transparency <= 0 destroy game object
+				gameState.minionsCreated--;
 			}
 		}
 		else if(minion.has_been_attacked == false){

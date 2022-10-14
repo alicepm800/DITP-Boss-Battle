@@ -1507,6 +1507,7 @@ struct GameObject
 	bool right_facing{ true };
 	bool has_attacked{ false };
 	bool has_been_attacked{ false };
+	bool has_cleaved_phase_two{ false };
 
 	// Add your own data members here if you want to
 	PLAY_ADD_GAMEOBJECT_MEMBERS
