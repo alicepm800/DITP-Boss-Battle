@@ -1503,16 +1503,16 @@ struct GameObject
 	float scale{ 1 };
 	int lastFrameUpdated{ -1 };
 
-	// new member variables
-	bool right_facing{ true };
-	bool has_attacked{ false };
-	bool has_been_attacked{ false };
-	bool has_cleaved_phase_two{ false };
 
 	// Add your own data members here if you want to
 	PLAY_ADD_GAMEOBJECT_MEMBERS
 
 	int GetId() { return m_id; }
+	bool right_facing{ true };
+	bool has_attacked{ false };
+	bool has_been_attacked{ false };
+	bool has_cleaved_phase_two{ false };
+	bool cat_been_hit{ false };
 
 private:
 	// The GameObject's id should never be changed manually so we make it private!

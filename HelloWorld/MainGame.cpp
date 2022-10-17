@@ -46,6 +46,7 @@ struct GameState {
 	int minionsCreated = 0;
 	int minionCooldown = 0;
 	int minionMoveCooldown = 0;
+	int beenHitCounter = 0;
 
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -108,7 +109,6 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 
 bool MainGameUpdate(float elapsedTime) {
 	Play::DrawBackground();
-	//Play::DrawFontText("69px", "LIVES", { DISPLAY_WIDTH / 1.21f,  50 }, Play::CENTRE);
 	UpdateCat();
 	UpdateBoss();
 	UpdateHealth();
@@ -315,21 +315,24 @@ void UpdateBoss() {
 					int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40 }, 50, "");
 					GameObject& sword = Play::GetGameObject(sword_id);
 					if (Play::IsColliding(cat, sword)) {
-						gameState.playerHealth--;
+						cat.cat_been_hit = true;
 					}
-					
-				}
-				else if (boss.right_facing == false) {
-					int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 50, "");
-					GameObject& sword = Play::GetGameObject(sword_id);
-					if (Play::IsColliding(cat, sword)) {
-						gameState.playerHealth--;
+					else if (boss.right_facing == false) {
+						int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 50, "");
+						GameObject& sword = Play::GetGameObject(sword_id);
+						if (Play::IsColliding(cat, sword)) {
+							cat.cat_been_hit = true;
+						}
 					}
 				}
 			}
 			if (boss.frame == 15) {
 				Play::DestroyGameObjectsByType(TYPE_SWORD);
 				gameState.bossIdleCooldown = 120;
+				if (cat.cat_been_hit == true) {
+					gameState.playerHealth--;
+					cat.cat_been_hit = false;
+				}
 				if (gameState.phase == 2) {
 					boss.has_cleaved_phase_two = true;
 				}
