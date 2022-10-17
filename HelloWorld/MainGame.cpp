@@ -47,6 +47,7 @@ struct GameState {
 	int minionCooldown = 0;
 	int minionMoveCooldown = 0;
 	int beenHitCounter = 0;
+	bool hitBoxCreated = false;
 
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -63,7 +64,9 @@ enum GameObjectType {
 	TYPE_SWORD,
 	TYPE_BOSS_HIT,
 	TYPE_MINION,
-	TYPE_MINION_SPAWN
+	TYPE_MINION_SPAWN,
+	TYPE_SMASH_HIT_BOX
+	
 };
 
 void UpdateCat();
@@ -222,6 +225,7 @@ void UpdateBoss() {
 		break;
 
 	case STATE_BOSS_IDLE:
+		Play::DestroyGameObjectsByType(TYPE_SMASH_HIT_BOX);
 		Play::SetSprite(boss, "boss_idle", 0.12f);
 		gameState.bossIdleCooldown--;
 
@@ -354,6 +358,11 @@ void UpdateBoss() {
 		if (boss.frame >= 5) {
 			if ((boss.pos.x <= gameState.catTargetPositionX + 10) && (boss.pos.y <= gameState.catTargetPositionY +10)) {
 				boss.velocity = { 0, 0 }; 
+				if (gameState.hitBoxCreated == false) {
+					Play::CreateGameObject(TYPE_SMASH_HIT_BOX, { boss.pos.x, boss.pos.y + 50 }, 100, " ");
+					gameState.hitBoxCreated = true;
+				}
+				
 			}
 			else if ((boss.pos.x != gameState.catTargetPositionX) || (boss.pos.y != gameState.catTargetPositionY)) {
 
@@ -362,7 +371,18 @@ void UpdateBoss() {
 		}
 
 		if (boss.frame == 18) {
-			boss.velocity = { 0, 0 };
+			std::vector<int>vHitBoxes = Play::CollectGameObjectIDsByType(TYPE_SMASH_HIT_BOX);
+			for (int id_hit_box : vHitBoxes) {
+				GameObject& hit_box = Play::GetGameObject(id_hit_box);
+				if (Play::IsColliding(cat, hit_box)) {
+					cat.cat_been_hit = true;
+					if (cat.cat_been_hit == true) {
+						gameState.playerHealth--;
+						cat.cat_been_hit = false;
+					}
+				}
+			}
+			gameState.hitBoxCreated = false;
 			gameState.bossIdleCooldown = 120;
 			gameState.bossState = STATE_BOSS_IDLE; 
 		}
