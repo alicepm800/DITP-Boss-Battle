@@ -394,7 +394,7 @@ void UpdateBoss() {
 		break;
 	}
 
-	BossDead();
+	void BossDead();
 	if ((gameState.bossState == STATE_BOSS_DEAD) && (boss.frame == 22)) {
 		Play::DrawObjectTransparent(boss, 0.0f);
 	}
@@ -406,24 +406,20 @@ void UpdateBoss() {
 	UpdateSuccessfulHit();
 }
 void UpdateHealth() {
-		GameObject& heart = Play::GetGameObjectByType(TYPE_HEART);
-		Play::DrawObjectRotated(heart);
+	GameObject& heart = Play::GetGameObjectByType(TYPE_HEART);
+	Play::DrawObjectRotated(heart);
 
-		if (gameState.playerHealth == 3) {
-			Play::SetSprite(heart, "three_quarters_health", 0.0f);
-		}
+	if (gameState.playerHealth == 3) {
+		Play::SetSprite(heart, "three_quarters_health", 0.0f);
+	}
 
-		if (gameState.playerHealth == 2) {
-			Play::SetSprite(heart, "half_health", 0.0f);
-		}
+	if (gameState.playerHealth == 2) {
+		Play::SetSprite(heart, "half_health", 0.0f);
+	}
 
-		if (gameState.playerHealth == 1) {
-			Play::SetSprite(heart, "quarter_health", 0.0f);
-		}
-
-
-		
-	
+	if (gameState.playerHealth == 1) {
+		Play::SetSprite(heart, "quarter_health", 0.0f);
+	}	
 }
 
 void BossDead() {
@@ -478,9 +474,13 @@ void UpdateFireball() {
 
 		if (Play::IsColliding(fireball, cat)) {
 			Play::SetSprite(fireball, "explosion", 0.2f);
-			gameState.playerHealth--;
-			if (fireball.frame == 10) {
+			cat.cat_been_hit = true;
+			if ((fireball.frame > 9) || (!Play::IsVisible)) {
 				Play::DestroyGameObject(fireball_id);
+				if (cat.cat_been_hit == true) {
+					gameState.playerHealth--;
+					cat.cat_been_hit = false;
+				}
 			}
 		}
 	}
