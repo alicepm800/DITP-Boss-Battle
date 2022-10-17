@@ -312,19 +312,20 @@ void UpdateBoss() {
 
 			if (boss.frame == 10) {//&& inivisible game object is colliding with cat then reduce cat's health and play hit sounds and animation 
 				if (boss.right_facing == true) {
-					int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40 }, 50, "");
+					int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x + 170, boss.pos.y + 40 }, 80, "");
 					GameObject& sword = Play::GetGameObject(sword_id);
 					if (Play::IsColliding(cat, sword)) {
 						cat.cat_been_hit = true;
 					}
-					else if (boss.right_facing == false) {
-						int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 50, "");
-						GameObject& sword = Play::GetGameObject(sword_id);
-						if (Play::IsColliding(cat, sword)) {
-							cat.cat_been_hit = true;
-						}
+				}
+				else if (boss.right_facing == false) {
+					int sword_id = Play::CreateGameObject(TYPE_SWORD, { boss.pos.x - 170, boss.pos.y + 40 }, 80, "");
+					GameObject& sword = Play::GetGameObject(sword_id);
+					if (Play::IsColliding(cat, sword)) {
+						cat.cat_been_hit = true;
 					}
 				}
+				
 			}
 			if (boss.frame == 15) {
 				Play::DestroyGameObjectsByType(TYPE_SWORD);
