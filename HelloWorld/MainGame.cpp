@@ -48,6 +48,7 @@ struct GameState {
 	int minionMoveCooldown = 0;
 	int beenHitCounter = 0;
 	bool hitBoxCreated = false;
+	int hitByMinionTimer = 0;
 
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -391,7 +392,7 @@ void UpdateBoss() {
 	case STATE_BOSS_SUMMON:
 		gameState.minionCooldown--;
 		if (gameState.minionCooldown <= 0) {
-			int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 62, "minion_move");
+			int minion_id = Play::CreateGameObject(TYPE_MINION, { Play::RandomRollRange(50, 1100), Play::RandomRollRange(50, 680) }, 40, "minion_move");
 			GameObject& minion = Play::GetGameObject(minion_id);
 			Play::CreateGameObject(TYPE_MINION_SPAWN, minion.pos, 5, "minion_spawn");
 			gameState.minionsCreated++;
@@ -399,7 +400,7 @@ void UpdateBoss() {
 			gameState.minionMoveCooldown = 45;
 		}
 
-		if (gameState.minionsCreated == 5) {
+		if (gameState.minionsCreated == 3) {
 			gameState.bossState = STATE_BOSS_SMASH;
 		}
 
@@ -521,11 +522,23 @@ void UpdateMinion() {
 		DrawObjectXFlipped(minion);
 		
 
-		if (Play::IsColliding(minion, cat) && (gameState.catState == STATE_ATTACK)) {
+		if (Play::IsColliding(minion, cat) && (gameState.catState == STATE_ATTACK)) { //perhaps you should add shooting magic to cat to kill minions
 			Play::SetSprite(minion, "minion_death", 0.25f);
 			minion.has_been_attacked = true;
 		}
-		
+		else if (Play::IsColliding(minion, cat) && (gameState.catState != STATE_ATTACK)) {
+			cat.cat_been_hit = true;
+			gameState.hitByMinionTimer = 30;
+		}
+
+		if (cat.cat_been_hit == true) {
+			gameState.hitByMinionTimer--;
+			if (gameState.hitByMinionTimer == 1) {
+				gameState.playerHealth--;
+				cat.cat_been_hit = false;
+			}
+
+		}
 		if (minion.has_been_attacked == true) {
 			minion.velocity = { 0,0 };
 			if (minion.frame == 12) {
