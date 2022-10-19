@@ -145,11 +145,18 @@ bool MainGameUpdate(float elapsedTime) {
 
 void UpdateGame() {
 	GameObject& ui_panel = Play::GetGameObjectByType(TYPE_UI_PANEL);
+	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
+	std::vector<int>minion_list = Play::CollectGameObjectIDsByType(TYPE_MINION);
+	std::vector<int>fireball_list = Play::CollectGameObjectIDsByType(TYPE_FIREBALL);
+	std::vector<int>right_magic_ball_list = Play::CollectGameObjectIDsByType(TYPE_RIGHT_MAGIC_FIREBALL);
+	std::vector<int>left_magic_ball_list = Play::CollectGameObjectIDsByType(TYPE_LEFT_MAGIC_FIREBALL);
+
 	switch (gameState.playingState){
 		case STATE_START_SCREEN:
 			Play::DrawObjectRotated(ui_panel);
 			Play::DrawFontText("69px", "BOSS BATTLE", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
-			Play::DrawFontText("28px", "press space to start", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
+			Play::DrawFontText("28px", "press spacebar to start", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
 			if (Play::KeyPressed(VK_SPACE)) {
 				gameState.gameStarted = true;
 				gameState.playingState = STATE_PLAY_SCREEN;
@@ -157,8 +164,32 @@ void UpdateGame() {
 			break;
 
 		case STATE_PLAY_SCREEN:
+			Play::DrawFontText("28px", "Move: arrows", { DISPLAY_WIDTH  - 1250, DISPLAY_HEIGHT - 200 }, Play::LEFT);
+			Play::DrawFontText("28px", "Sword : A", { DISPLAY_WIDTH - 1250, DISPLAY_HEIGHT - 150 }, Play::LEFT);
+			Play::DrawFontText("28px", "Magic: spacebar", { DISPLAY_WIDTH - 1250, DISPLAY_HEIGHT - 100 }, Play::LEFT);
 			break;
 
+		case STATE_GAME_OVER:
+			Play::DrawObjectRotated(ui_panel);
+			Play::DrawFontText("69px", "GAME OVER", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
+			Play::DrawFontText("28px", "press space to restart", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
+			cat.velocity = { 0,0 };
+			cat.pos = { 500, 500 };
+			boss.velocity = { 0,0 };
+			boss.pos = { 720, 250 };
+			Play::DestroyGameObjectsByType(TYPE_FIREBALL);
+			Play::DestroyGameObjectsByType(TYPE_RIGHT_MAGIC_FIREBALL);
+			Play::DestroyGameObjectsByType(TYPE_LEFT_MAGIC_FIREBALL);
+			Play::DestroyGameObjectsByType(TYPE_MINION);
+			gameState.catState = STATE_APPEAR;
+			gameState.bossState = STATE_BOSS_APPEAR;
+			gameState.gameStarted = false;
+			if (Play::KeyPressed(VK_SPACE)) {
+				gameState.catState = STATE_IDLE;
+				gameState.bossState = STATE_BOSS_IDLE;
+				gameState.playingState = STATE_PLAY_SCREEN;
+			}
+			
 	}
 
 }
@@ -169,7 +200,7 @@ void UpdateCat() {
 	switch (gameState.catState) {
 
 		case STATE_APPEAR:
-		
+
 			gameState.playerHealth = 4;
 			gameState.bossHealth = 500;
 			gameState.phase = 1;
@@ -489,7 +520,15 @@ void UpdateBoss() {
 }
 void UpdateHealth() {
 	GameObject& heart = Play::GetGameObjectByType(TYPE_HEART);
-	Play::DrawObjectRotated(heart);
+	if (gameState.playingState == STATE_GAME_OVER) {
+		Play::DrawObjectRotated(heart, 0.0f);
+	}
+	else {
+		Play::DrawObjectRotated(heart);
+	}
+	if (gameState.playerHealth == 4) {
+		Play::SetSprite(heart, "full_health", 0.0f);
+	}
 
 	if (gameState.playerHealth == 3) {
 		Play::SetSprite(heart, "three_quarters_health", 0.0f);
@@ -502,6 +541,10 @@ void UpdateHealth() {
 	if (gameState.playerHealth == 1) {
 		Play::SetSprite(heart, "quarter_health", 0.0f);
 	}	
+
+	if (gameState.playerHealth == 0) {
+		gameState.playingState = STATE_GAME_OVER;
+	}
 }
 
 void BossDead() {
