@@ -30,6 +30,14 @@ enum BossState {
 	STATE_BOSS_DEAD,
 };
 
+enum PlayingState {
+	STATE_START_SCREEN = 0,
+	STATE_MENU_SCREEN,
+	STATE_PLAY_SCREEN,
+	STATE_GAME_OVER
+
+};
+
 struct GameState {
 
 	int attackCooldown = 0;
@@ -51,9 +59,12 @@ struct GameState {
 	bool hitBoxCreated = false;
 	int hitByMinionTimer = 0;
 	int magicBallsCreated = 0;
+	bool gameStarted = false;
 
+	PlayingState playingState = STATE_START_SCREEN;
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
+	
 };
 
 GameState gameState;
@@ -70,7 +81,8 @@ enum GameObjectType {
 	TYPE_MINION_SPAWN,
 	TYPE_SMASH_HIT_BOX,
 	TYPE_RIGHT_MAGIC_FIREBALL,
-	TYPE_LEFT_MAGIC_FIREBALL
+	TYPE_LEFT_MAGIC_FIREBALL,
+	TYPE_UI_PANEL
 	
 };
 
@@ -84,6 +96,7 @@ void DrawObjectXFlipped(GameObject& obj);
 void UpdateMinion();
 void UpdateMinionSpawn();
 void BossDead();
+void UpdateGame();
 
 
 
@@ -105,7 +118,7 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::MoveSpriteOrigin("boss_dead", 145, 120);
 	Play::MoveSpriteOrigin("cat_magic", 50, 60);
 	Play::MoveSpriteOrigin("magic_ball", 65, 70);
-	//Play::MoveSpriteOrigin("magic_ball_explosion", 65, 70);
+	Play::MoveSpriteOrigin("ui_panel", 30, 32);
 	//Play::StartAudioLoop( "battle_theme" );
 	Play::LoadBackground("Data\\Backgrounds\\dungeonbackground.png");
 
@@ -114,6 +127,9 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	int heart_id = Play::CreateGameObject(TYPE_HEART, { 50 , 25 }, 0, "full_health");
 	GameObject& heart = Play::GetGameObject(heart_id);
 	heart.scale = 4.0f;
+	int ui_panel_id = Play::CreateGameObject(TYPE_UI_PANEL, { 640, 360 }, 0, "ui_panel");
+	GameObject& ui_panel = Play::GetGameObject(ui_panel_id);
+	ui_panel.scale = 10.0f;
 }
 
 bool MainGameUpdate(float elapsedTime) {
@@ -121,8 +137,23 @@ bool MainGameUpdate(float elapsedTime) {
 	UpdateCat();
 	UpdateBoss();
 	UpdateHealth();
+	UpdateGame();
 	Play::PresentDrawingBuffer();
 	return Play::KeyDown(VK_ESCAPE);
+}
+
+void UpdateGame() {
+	GameObject& ui_panel = Play::GetGameObjectByType(TYPE_UI_PANEL);
+	switch (gameState.playingState){
+	case STATE_START_SCREEN:
+		Play::DrawObjectRotated(ui_panel);
+		if (Play::KeyPressed(VK_SPACE)) {
+			gameState.gameStarted = true;
+		}
+		break;
+
+	}
+
 }
 
 void UpdateCat() {
@@ -131,11 +162,13 @@ void UpdateCat() {
 	switch (gameState.catState) {
 
 	case STATE_APPEAR:
-		gameState.catState = STATE_IDLE;
+		
 		gameState.playerHealth = 4;
 		gameState.bossHealth = 500;
 		gameState.phase = 1;
-		gameState.catState = STATE_IDLE;
+		if (gameState.gameStarted == true) {
+			gameState.catState = STATE_IDLE;
+		}
 		break;
 
 	case STATE_IDLE:
@@ -220,18 +253,18 @@ void UpdateCat() {
 			}
 
 		}
-		if (cat.frame == 4) { 
+		if (cat.frame == 4) {
 			gameState.catState = STATE_IDLE;
 		}
 
 		break;
-	}
+		}
 
-	UpdateMinion();
-	UpdateMinionSpawn();
-	DrawObjectXFlipped(cat);
-	Play::UpdateGameObject(cat);
-}
+		UpdateMinion();
+		UpdateMinionSpawn();
+		DrawObjectXFlipped(cat);
+		Play::UpdateGameObject(cat);
+	}
 
 void UpdateBoss() {
 	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
@@ -239,8 +272,10 @@ void UpdateBoss() {
 
 	switch (gameState.bossState) {
 	case STATE_BOSS_APPEAR:
-	    gameState.bossState = STATE_BOSS_IDLE;
 		gameState.bossIdleCooldown = 200;
+		if (gameState.gameStarted == true) {
+			gameState.bossState = STATE_BOSS_IDLE;
+		}
 		break;
 
 	case STATE_BOSS_IDLE:
@@ -543,7 +578,6 @@ void UpdateMagicFireball() {
 		}
 
 		if (Play::IsColliding(magic_ball, boss)) {
-			//Play::SetSprite(magic_ball, "magic_ball_explosion", 0.25f);
 			magic_ball.boss_been_hit = true;
 		}
 
@@ -556,8 +590,7 @@ void UpdateMagicFireball() {
 			Play::UpdateGameObject(magic_ball);
 			Play::DrawObjectRotated(magic_ball);
 		}
-		//Play::UpdateGameObject(magic_ball);
-		//Play::DrawObjectRotated(magic_ball);
+		
 	}
 
 	for (int left_magic_ball_id : left_magic_ball_list) {
@@ -580,8 +613,7 @@ void UpdateMagicFireball() {
 			Play::UpdateGameObject(magic_ball);
 			Play::DrawObjectRotated(magic_ball);
 		}
-		//Play::UpdateGameObject(magic_ball);
-		//Play::DrawObjectRotated(magic_ball);
+		
 	}
 }
 
