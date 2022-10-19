@@ -60,6 +60,7 @@ struct GameState {
 	int hitByMinionTimer = 0;
 	int magicBallsCreated = 0;
 	bool gameStarted = false;
+	bool titleFontWritten = false;
 
 	PlayingState playingState = STATE_START_SCREEN;
 	CatState catState = STATE_APPEAR;
@@ -118,7 +119,7 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::MoveSpriteOrigin("boss_dead", 145, 120);
 	Play::MoveSpriteOrigin("cat_magic", 50, 60);
 	Play::MoveSpriteOrigin("magic_ball", 65, 70);
-	Play::MoveSpriteOrigin("ui_panel", 30, 32);
+	Play::MoveSpriteOrigin("ui_panel", 25, 20);
 	//Play::StartAudioLoop( "battle_theme" );
 	Play::LoadBackground("Data\\Backgrounds\\dungeonbackground.png");
 
@@ -129,7 +130,7 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	heart.scale = 4.0f;
 	int ui_panel_id = Play::CreateGameObject(TYPE_UI_PANEL, { 640, 360 }, 0, "ui_panel");
 	GameObject& ui_panel = Play::GetGameObject(ui_panel_id);
-	ui_panel.scale = 10.0f;
+	ui_panel.scale = 16.0f;
 }
 
 bool MainGameUpdate(float elapsedTime) {
@@ -145,12 +146,18 @@ bool MainGameUpdate(float elapsedTime) {
 void UpdateGame() {
 	GameObject& ui_panel = Play::GetGameObjectByType(TYPE_UI_PANEL);
 	switch (gameState.playingState){
-	case STATE_START_SCREEN:
-		Play::DrawObjectRotated(ui_panel);
-		if (Play::KeyPressed(VK_SPACE)) {
-			gameState.gameStarted = true;
-		}
-		break;
+		case STATE_START_SCREEN:
+			Play::DrawObjectRotated(ui_panel);
+			Play::DrawFontText("69px", "BOSS BATTLE", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
+			Play::DrawFontText("28px", "press space to start", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
+			if (Play::KeyPressed(VK_SPACE)) {
+				gameState.gameStarted = true;
+				gameState.playingState = STATE_PLAY_SCREEN;
+			}
+			break;
+
+		case STATE_PLAY_SCREEN:
+			break;
 
 	}
 
@@ -161,104 +168,104 @@ void UpdateCat() {
 	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
 	switch (gameState.catState) {
 
-	case STATE_APPEAR:
+		case STATE_APPEAR:
 		
-		gameState.playerHealth = 4;
-		gameState.bossHealth = 500;
-		gameState.phase = 1;
-		if (gameState.gameStarted == true) {
-			gameState.catState = STATE_IDLE;
-		}
-		break;
-
-	case STATE_IDLE:
-		Play::SetSprite(cat, "cat_idle", 0.2f);
-		cat.velocity = { 0, 0 };
-		cat.scale = 2.0f;
-		if (Play::KeyDown(VK_LEFT) || Play::KeyDown(VK_RIGHT) || Play::KeyDown(VK_UP) || Play::KeyDown(VK_DOWN)) {
-			gameState.catState = STATE_RUN;
-		}
-		if (Play::KeyPressed('A')) {
-			gameState.catState = STATE_SWORD_ATTACK;
-		}
-
-		if (Play::KeyPressed(VK_SPACE)) {
-			gameState.catState = STATE_MAGIC_ATTACK;
-		}
-		break;
-
-	case STATE_RUN:
-		if (Play::KeyDown(VK_LEFT)) {
-			Play::SetSprite(cat, "cat_run", 0.2f);
-			cat.velocity = { -5, 0 };
-
-		}
-		else if (Play::KeyDown(VK_RIGHT)) {
-			Play::SetSprite(cat, "cat_run", 0.2f);
-			cat.velocity = { 5, 0 };
-		}
-		else if (Play::KeyDown(VK_UP)) {
-			cat.velocity = { 0, -5 };
-			Play::SetSprite(cat, "cat_run", 0.2f);
-		}
-		else if (Play::KeyDown(VK_DOWN)) {
-			cat.velocity = { 0, 5 };
-			Play::SetSprite(cat, "cat_run", 0.2f);
-
-		}
-		else {
-
-			gameState.catState = STATE_IDLE;
-		}
-		break;
-	case STATE_MAGIC_ATTACK:
-		Play::SetSprite(cat, "cat_magic", 0.2f);
-		gameState.magicBallsCreated++;
-		if (gameState.magicBallsCreated == 1) {
-			if (cat.right_facing == true) {
-				Play::CreateGameObject(TYPE_RIGHT_MAGIC_FIREBALL, { cat.pos.x + 30, cat.pos.y }, 10, "magic_ball");
+			gameState.playerHealth = 4;
+			gameState.bossHealth = 500;
+			gameState.phase = 1;
+			if (gameState.gameStarted == true) {
+				gameState.catState = STATE_IDLE;
 			}
-			else if (cat.right_facing == false) {
-				Play::CreateGameObject(TYPE_LEFT_MAGIC_FIREBALL, { cat.pos.x - 30, cat.pos.y }, 10, "magic_ball");
+			break;
+
+		case STATE_IDLE:
+			Play::SetSprite(cat, "cat_idle", 0.2f);
+			cat.velocity = { 0, 0 };
+			cat.scale = 2.0f;
+			if (Play::KeyDown(VK_LEFT) || Play::KeyDown(VK_RIGHT) || Play::KeyDown(VK_UP) || Play::KeyDown(VK_DOWN)) {
+				gameState.catState = STATE_RUN;
+			}
+			if (Play::KeyPressed('A')) {
+				gameState.catState = STATE_SWORD_ATTACK;
 			}
 
-		}
-		if (cat.frame == 5) {
-			gameState.magicBallsCreated = 0;
-			gameState.catState = STATE_IDLE;
-		}
-
-		break;
-	case STATE_SWORD_ATTACK:
-		Play::SetSprite(cat, "cat_attack", 0.2f);
-		if (Play::IsColliding(boss, cat)) {
-			Play::PlayAudio("hit");
-			if (cat.right_facing == true) {
-				if (cat.frame == 0) {
-					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
-					gameState.bossHealth -= 50;
-				}
-				if (gameState.bossHealth <= 250) {
-					gameState.phase = 2;
-				}
+			if (Play::KeyPressed(VK_SPACE)) {
+				gameState.catState = STATE_MAGIC_ATTACK;
 			}
-			else if (cat.right_facing == false) {
-				if (cat.frame == 0) {
-					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
-					gameState.bossHealth -= 50;
+			break;
+
+		case STATE_RUN:
+			if (Play::KeyDown(VK_LEFT)) {
+				Play::SetSprite(cat, "cat_run", 0.2f);
+				cat.velocity = { -5, 0 };
+
+			}
+			else if (Play::KeyDown(VK_RIGHT)) {
+				Play::SetSprite(cat, "cat_run", 0.2f);
+				cat.velocity = { 5, 0 };
+			}
+			else if (Play::KeyDown(VK_UP)) {
+				cat.velocity = { 0, -5 };
+				Play::SetSprite(cat, "cat_run", 0.2f);
+			}
+			else if (Play::KeyDown(VK_DOWN)) {
+				cat.velocity = { 0, 5 };
+				Play::SetSprite(cat, "cat_run", 0.2f);
+
+			}
+			else {
+
+				gameState.catState = STATE_IDLE;
+			}
+			break;
+		case STATE_MAGIC_ATTACK:
+			Play::SetSprite(cat, "cat_magic", 0.2f);
+			gameState.magicBallsCreated++;
+			if (gameState.magicBallsCreated == 1) {
+				if (cat.right_facing == true) {
+					Play::CreateGameObject(TYPE_RIGHT_MAGIC_FIREBALL, { cat.pos.x + 30, cat.pos.y }, 10, "magic_ball");
 				}
-				if (gameState.bossHealth <= 250) {
-					gameState.phase = 2;
+				else if (cat.right_facing == false) {
+					Play::CreateGameObject(TYPE_LEFT_MAGIC_FIREBALL, { cat.pos.x - 30, cat.pos.y }, 10, "magic_ball");
 				}
+
+			}
+			if (cat.frame == 5) {
+				gameState.magicBallsCreated = 0;
+				gameState.catState = STATE_IDLE;
 			}
 
-		}
-		if (cat.frame == 4) {
-			gameState.catState = STATE_IDLE;
-		}
+			break;
+		case STATE_SWORD_ATTACK:
+			Play::SetSprite(cat, "cat_attack", 0.2f);
+			if (Play::IsColliding(boss, cat)) {
+				Play::PlayAudio("hit");
+				if (cat.right_facing == true) {
+					if (cat.frame == 0) {
+						Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
+						gameState.bossHealth -= 50;
+					}
+					if (gameState.bossHealth <= 250) {
+						gameState.phase = 2;
+					}
+				}
+				else if (cat.right_facing == false) {
+					if (cat.frame == 0) {
+						Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
+						gameState.bossHealth -= 50;
+					}
+					if (gameState.bossHealth <= 250) {
+						gameState.phase = 2;
+					}
+				}
 
-		break;
-		}
+			}
+			if (cat.frame == 4) {
+				gameState.catState = STATE_IDLE;
+			}
+
+			break;
+	}
 
 		UpdateMinion();
 		UpdateMinionSpawn();
