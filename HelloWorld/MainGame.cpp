@@ -12,7 +12,8 @@ enum CatState
 	STATE_APPEAR = 0,
 	STATE_IDLE,
 	STATE_RUN,
-	STATE_ATTACK
+	STATE_SWORD_ATTACK,
+	STATE_MAGIC_ATTACK
 };
 
 enum BossState {
@@ -49,6 +50,7 @@ struct GameState {
 	int beenHitCounter = 0;
 	bool hitBoxCreated = false;
 	int hitByMinionTimer = 0;
+	int magicBallsCreated = 0;
 
 	CatState catState = STATE_APPEAR;
 	BossState bossState = STATE_BOSS_APPEAR;
@@ -66,7 +68,9 @@ enum GameObjectType {
 	TYPE_BOSS_HIT,
 	TYPE_MINION,
 	TYPE_MINION_SPAWN,
-	TYPE_SMASH_HIT_BOX
+	TYPE_SMASH_HIT_BOX,
+	TYPE_RIGHT_MAGIC_FIREBALL,
+	TYPE_LEFT_MAGIC_FIREBALL
 	
 };
 
@@ -74,6 +78,7 @@ void UpdateCat();
 void UpdateBoss();
 void UpdateHealth();
 void UpdateFireball();
+void UpdateMagicFireball();
 void UpdateSuccessfulHit();
 void DrawObjectXFlipped(GameObject& obj);
 void UpdateMinion();
@@ -98,6 +103,8 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::MoveSpriteOrigin("minion_spawn", 50, 70);
 	Play::MoveSpriteOrigin("minion_death", 140, 150);
 	Play::MoveSpriteOrigin("boss_dead", 145, 120);
+	Play::MoveSpriteOrigin("cat_magic", 50, 60);
+	Play::MoveSpriteOrigin("magic_ball", 65, 70);
 	//Play::StartAudioLoop( "battle_theme" );
 	Play::LoadBackground("Data\\Backgrounds\\dungeonbackground.png");
 
@@ -107,9 +114,6 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	GameObject& heart = Play::GetGameObject(heart_id);
 	heart.scale = 4.0f;
 }
-
-
-
 
 bool MainGameUpdate(float elapsedTime) {
 	Play::DrawBackground();
@@ -142,9 +146,12 @@ void UpdateCat() {
 			gameState.catState = STATE_RUN;
 		}
 		if (Play::KeyPressed('A') && (gameState.attackCooldown <= 0)) {
-			gameState.catState = STATE_ATTACK;
+			gameState.catState = STATE_SWORD_ATTACK;
 		}
 
+		if (Play::KeyPressed(VK_SPACE)) {//add gameState.magicCooldown and try to link with UI
+			gameState.catState = STATE_MAGIC_ATTACK;
+		}
 		break;
 
 	case STATE_RUN:
@@ -171,44 +178,54 @@ void UpdateCat() {
 			gameState.catState = STATE_IDLE;
 		}
 		break;
-
-
-	case STATE_ATTACK:
-		if (Play::KeyDown('A') && gameState.attackCooldown <= 0) {
-			Play::SetSprite(cat, "cat_attack", 0.2f);
-			if (Play::IsColliding(boss, cat)) {
-				Play::PlayAudio("hit");
-				if (cat.right_facing == true) {
-					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack");
-						gameState.bossHealth -= 50; //fixed issue, add this after code review
-						if (gameState.bossHealth <= 250) {
-							gameState.phase = 2;
-						}
-				}
-				else if (cat.right_facing == false) {
-					Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack");
-						gameState.bossHealth -= 50;
-						if (gameState.bossHealth <= 250) {
-							gameState.phase = 2;
-						}
-				}
-
+	case STATE_MAGIC_ATTACK:
+		Play::SetSprite(cat, "cat_magic", 0.2f);
+		gameState.magicBallsCreated++;
+		if (gameState.magicBallsCreated == 1) {
+			if (cat.right_facing == true) {
+				Play::CreateGameObject(TYPE_RIGHT_MAGIC_FIREBALL, { cat.pos.x + 30, cat.pos.y }, 10, "magic_ball");
 			}
-			if (cat.frame == 4) {  //put in this statement the number of health decreased if there is a collision 
-
-				gameState.catState = STATE_IDLE;
-				gameState.attackCooldown = 8;
-
+			else if (cat.right_facing == false) {
+				Play::CreateGameObject(TYPE_LEFT_MAGIC_FIREBALL, { cat.pos.x - 30, cat.pos.y }, 10, "magic_ball");
 			}
+
 		}
-		else {
-			gameState.attackCooldown = 8;
+		if (cat.frame == 5) {
+			gameState.magicBallsCreated = 0;
 			gameState.catState = STATE_IDLE;
+		}
+
+		break;
+	case STATE_SWORD_ATTACK:
+		Play::SetSprite(cat, "cat_attack", 0.2f);
+		if (Play::IsColliding(boss, cat)) {
+			Play::PlayAudio("hit");
+			if (cat.right_facing == true) {
+				Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack");
+				gameState.bossHealth -= 50;
+				if (gameState.bossHealth <= 250) {
+					gameState.phase = 2;
+				}
+			}
+			else if (cat.right_facing == false) {
+				Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack");
+				gameState.bossHealth -= 50;
+				if (gameState.bossHealth <= 250) {
+					gameState.phase = 2;
+				}
+			}
 
 		}
-		break;
+		if (cat.frame == 4) {  //put in this statement the number of health decreased if there is a collision 
 
+			gameState.catState = STATE_IDLE;
+			gameState.attackCooldown = 8;
+
+		}
+
+		break;
 	}
+
 	UpdateMinion();
 	UpdateMinionSpawn();
 	DrawObjectXFlipped(cat);
@@ -221,7 +238,7 @@ void UpdateBoss() {
 
 	switch (gameState.bossState) {
 	case STATE_BOSS_APPEAR:
-		gameState.bossState = STATE_BOSS_IDLE;
+	    gameState.bossState = STATE_BOSS_IDLE;
 		gameState.bossIdleCooldown = 200;
 		break;
 
@@ -424,6 +441,7 @@ void UpdateBoss() {
 	}
 	Play::UpdateGameObject(boss);
 	UpdateFireball();
+	UpdateMagicFireball();
 	UpdateSuccessfulHit();
 }
 void UpdateHealth() {
@@ -483,7 +501,6 @@ void DrawObjectXFlipped(GameObject& obj) {
 
 void UpdateFireball() {
 	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
-	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
 	std::vector<int>fireball_list = Play::CollectGameObjectIDsByType(TYPE_FIREBALL);
 
 	for (int fireball_id : fireball_list) {
@@ -491,19 +508,53 @@ void UpdateFireball() {
 		fireball.scale = 2.0f;
 		fireball.animSpeed = 2.0f;
 		Play::UpdateGameObject(fireball);
-		Play::DrawObjectRotated(fireball); //find a way to make it appear with 0 transparency and then full transparency, this is used to update scale
+		Play::DrawObjectRotated(fireball); 
 
 		if (Play::IsColliding(fireball, cat)) {
-			Play::SetSprite(fireball, "explosion", 0.2f);
-			cat.cat_been_hit = true;
-			if ((fireball.frame > 9) || (!Play::IsVisible)) {
-				Play::DestroyGameObject(fireball_id);
-				if (cat.cat_been_hit == true) {
-					gameState.playerHealth--;
-					cat.cat_been_hit = false;
-				}
+			Play::SetSprite(fireball, "explosion", 0.2f); //maybe instead of explosion i just destroy so you cant see bug
+			if (fireball.frame == 0) {
+				gameState.playerHealth--;
+				fireball.cat_been_hit = true;
 			}
+
 		}
+		if (((fireball.cat_been_hit == true) && (fireball.frame == 9)) 
+			|| (!Play::IsVisible(fireball) )) { //happens when i move up and down
+				Play::DestroyGameObject(fireball_id);
+				
+		}
+	}
+}
+
+
+void UpdateMagicFireball() {
+	GameObject& boss = Play::GetGameObjectByType(TYPE_BOSS);
+	GameObject& cat = Play::GetGameObjectByType(TYPE_CAT);
+	std::vector<int>right_magic_ball_list = Play::CollectGameObjectIDsByType(TYPE_RIGHT_MAGIC_FIREBALL);
+	std::vector<int>left_magic_ball_list = Play::CollectGameObjectIDsByType(TYPE_LEFT_MAGIC_FIREBALL);
+
+	for (int right_magic_ball_id : right_magic_ball_list) {
+		GameObject& magic_ball = Play::GetGameObject(right_magic_ball_id);
+		magic_ball.animSpeed = 0.2f;
+		
+		if (magic_ball.frame == 5) {
+			magic_ball.frame = 3;
+		}
+		magic_ball.velocity = { 4, 0 };
+		Play::UpdateGameObject(magic_ball);
+		Play::DrawObjectRotated(magic_ball);
+	}
+
+	for (int left_magic_ball_id : left_magic_ball_list) {
+		GameObject& magic_ball = Play::GetGameObject(left_magic_ball_id);
+		magic_ball.animSpeed = 0.2f;
+
+		if (magic_ball.frame == 5) {
+			magic_ball.frame = 3;
+		}
+		magic_ball.velocity = { -4, 0 };
+		Play::UpdateGameObject(magic_ball);
+		Play::DrawObjectRotated(magic_ball);
 	}
 }
 
@@ -522,11 +573,11 @@ void UpdateMinion() {
 		DrawObjectXFlipped(minion);
 		
 
-		if (Play::IsColliding(minion, cat) && (gameState.catState == STATE_ATTACK)) { //perhaps you should add shooting magic to cat to kill minions
+		if (Play::IsColliding(minion, cat) && (gameState.catState == STATE_SWORD_ATTACK)) { //perhaps you should add shooting magic to cat to kill minions
 			Play::SetSprite(minion, "minion_death", 0.25f);
 			minion.has_been_attacked = true;
 		}
-		else if (Play::IsColliding(minion, cat) && (gameState.catState != STATE_ATTACK)) {
+		else if (Play::IsColliding(minion, cat) && (gameState.catState != STATE_SWORD_ATTACK)) {
 			cat.cat_been_hit = true;
 			gameState.hitByMinionTimer = 30;
 		}
