@@ -270,7 +270,6 @@ void UpdateCat() {
 		case STATE_SWORD_ATTACK:
 			Play::SetSprite(cat, "cat_attack", 0.2f);
 			if (Play::IsColliding(boss, cat)) {
-				Play::PlayAudio("hit");
 				if (cat.right_facing == true) {
 					if (cat.frame == 0) {
 						Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
