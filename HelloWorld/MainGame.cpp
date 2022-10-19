@@ -120,7 +120,6 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::MoveSpriteOrigin("cat_magic", 50, 60);
 	Play::MoveSpriteOrigin("magic_ball", 65, 70);
 	Play::MoveSpriteOrigin("ui_panel", 25, 20);
-	//Play::StartAudioLoop( "battle_theme" );
 	Play::LoadBackground("Data\\Backgrounds\\dungeonbackground.png");
 
 	Play::CreateGameObject(TYPE_CAT, { 500, 500 }, 50, "cat_idle");
@@ -159,6 +158,7 @@ void UpdateGame() {
 			Play::DrawFontText("28px", "press spacebar to start", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
 			if (Play::KeyPressed(VK_SPACE)) {
 				gameState.gameStarted = true;
+				Play::StartAudioLoop("battle_theme");
 				gameState.playingState = STATE_PLAY_SCREEN;
 			}
 			break;
@@ -170,6 +170,7 @@ void UpdateGame() {
 			break;
 
 		case STATE_GAME_OVER:
+			Play::StopAudioLoop("battle_theme");
 			Play::DrawObjectRotated(ui_panel);
 			Play::DrawFontText("69px", "GAME OVER", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
 			Play::DrawFontText("28px", "press space to restart", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
@@ -185,6 +186,8 @@ void UpdateGame() {
 			gameState.bossState = STATE_BOSS_APPEAR;
 			gameState.gameStarted = false;
 			if (Play::KeyPressed(VK_SPACE)) {
+				gameState.gameStarted = true;
+				Play::StartAudioLoop("battle_theme");
 				gameState.catState = STATE_IDLE;
 				gameState.bossState = STATE_BOSS_IDLE;
 				gameState.playingState = STATE_PLAY_SCREEN;
