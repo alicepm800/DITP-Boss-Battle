@@ -27,14 +27,15 @@ enum BossState {
 	STATE_BOSS_HIT,
 	STATE_BOSS_SMASH,
 	STATE_BOSS_SUMMON,
-	STATE_BOSS_DEAD,
+	STATE_BOSS_DEAD
 };
 
 enum PlayingState {
 	STATE_START_SCREEN = 0,
 	STATE_MENU_SCREEN,
 	STATE_PLAY_SCREEN,
-	STATE_GAME_OVER
+	STATE_GAME_OVER,
+	STATE_WIN
 
 };
 
@@ -174,6 +175,31 @@ void UpdateGame() {
 			Play::DrawObjectRotated(ui_panel);
 			Play::DrawFontText("69px", "GAME OVER", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
 			Play::DrawFontText("28px", "press space to restart", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
+			cat.velocity = { 0,0 };
+			cat.pos = { 500, 500 };
+			boss.velocity = { 0,0 };
+			boss.pos = { 720, 250 };
+			Play::DestroyGameObjectsByType(TYPE_FIREBALL);
+			Play::DestroyGameObjectsByType(TYPE_RIGHT_MAGIC_FIREBALL);
+			Play::DestroyGameObjectsByType(TYPE_LEFT_MAGIC_FIREBALL);
+			Play::DestroyGameObjectsByType(TYPE_MINION);
+			gameState.catState = STATE_APPEAR;
+			gameState.bossState = STATE_BOSS_APPEAR;
+			gameState.gameStarted = false;
+			if (Play::KeyPressed(VK_SPACE)) {
+				gameState.gameStarted = true;
+				Play::StartAudioLoop("battle_theme");
+				gameState.catState = STATE_IDLE;
+				gameState.bossState = STATE_BOSS_IDLE;
+				gameState.playingState = STATE_PLAY_SCREEN;
+			}
+			break;
+
+		case STATE_WIN:
+			Play::StopAudioLoop("battle_theme");
+			Play::DrawObjectRotated(ui_panel);
+			Play::DrawFontText("69px", "BOSS DEAD", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
+			Play::DrawFontText("28px", "press space to play again", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
 			cat.velocity = { 0,0 };
 			cat.pos = { 500, 500 };
 			boss.velocity = { 0,0 };
@@ -377,6 +403,7 @@ void UpdateBoss() {
 			else if (boss.right_facing == false) {
 				int id_fireball = Play::CreateGameObject(TYPE_FIREBALL, { boss.pos.x - 150, boss.pos.y - 40 }, 10, "fireball");
 				GameObject& fireball = Play::GetGameObject(id_fireball);
+				Play::PlayAudio("hit");
 				Play::PointGameObject(fireball, 3.0f, gameState.catTargetPositionX, gameState.catTargetPositionY);
 				gameState.fireBallsCreated++;
 				gameState.fireBallCooldown = 35;
@@ -427,7 +454,12 @@ void UpdateBoss() {
 			}
 			if (boss.frame == 15) {
 				Play::DestroyGameObjectsByType(TYPE_SWORD);
-				gameState.bossIdleCooldown = 120;
+				if (gameState.phase == 1) {
+					gameState.bossIdleCooldown = 200;
+				}
+				else if (gameState.phase == 2) {
+					gameState.bossIdleCooldown = 300;
+				}
 				if (cat.cat_been_hit == true) {
 					gameState.playerHealth--;
 					cat.cat_been_hit = false;
@@ -500,10 +532,11 @@ void UpdateBoss() {
 		break;
 
 	case STATE_BOSS_DEAD:
-		Play::SetSprite(boss, "boss_dead", 0.15f);
+		Play::SetSprite(boss, "boss_dead", 0.1f);
 		boss.velocity = { 0,0 };
 		if (boss.frame == 22) {
 			boss.animSpeed = 0;
+			gameState.playingState = STATE_WIN;
 		}
 		break;
 	}
