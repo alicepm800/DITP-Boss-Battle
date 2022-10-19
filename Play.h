@@ -1513,6 +1513,7 @@ struct GameObject
 	bool has_been_attacked{ false };
 	bool has_cleaved_phase_two{ false };
 	bool cat_been_hit{ false };
+	bool boss_been_hit{ false };
 
 private:
 	// The GameObject's id should never be changed manually so we make it private!
