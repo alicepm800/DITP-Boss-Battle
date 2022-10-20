@@ -168,6 +168,7 @@ void UpdateGame() {
 			Play::DrawFontText("28px", "Move: arrows", { DISPLAY_WIDTH  - 1250, DISPLAY_HEIGHT - 200 }, Play::LEFT);
 			Play::DrawFontText("28px", "Sword : A", { DISPLAY_WIDTH - 1250, DISPLAY_HEIGHT - 150 }, Play::LEFT);
 			Play::DrawFontText("28px", "Magic: spacebar", { DISPLAY_WIDTH - 1250, DISPLAY_HEIGHT - 100 }, Play::LEFT);
+			Play::DrawRect({ 426, 650 }, { 852, 700 }, Play::cWhite);
 			break;
 
 		case STATE_GAME_OVER:
@@ -275,6 +276,9 @@ void UpdateCat() {
 			else {
 
 				gameState.catState = STATE_IDLE;
+			}
+			if (Play::IsLeavingDisplayArea(cat)) {
+				cat.pos = cat.oldPos;
 			}
 			break;
 		case STATE_MAGIC_ATTACK:
