@@ -1514,6 +1514,7 @@ struct GameObject
 	bool has_cleaved_phase_two{ false };
 	bool cat_been_hit{ false };
 	bool boss_been_hit{ false };
+	bool minion_timer_started{ false };
 
 private:
 	// The GameObject's id should never be changed manually so we make it private!
