@@ -63,6 +63,7 @@ struct GameState {
 	bool gameStarted = false;
 	bool titleFontWritten = false;
 	int lastPosXToDraw = 0;//to inform the length of the boss' health bar so it dynamically
+	
 
 	PlayingState playingState = STATE_START_SCREEN;
 	CatState catState = STATE_APPEAR;
@@ -164,7 +165,7 @@ void UpdateGame() {
 				gameState.gameStarted = true;
 				Play::StartAudioLoop("battle_theme");
 				gameState.playingState = STATE_PLAY_SCREEN;
-				gameState.lastPosXToDraw = 925;
+				gameState.lastPosXToDraw = 925; 
 			}
 			break;
 
@@ -175,7 +176,11 @@ void UpdateGame() {
 			Play::DrawRect({ 340, 650 }, { 940, 700 }, Play::cWhite);
 			for (int x = 345; x < gameState.lastPosXToDraw; x++) { 	
 				Play::DrawSprite(segment_id, { x, 660 }, 0);
+			//	if (x  >= gameState.lastPosXToDraw) {
+				//	gameState.playingState = STATE_WIN;
+			//	}
 			}
+			
 			
 			break;
 
@@ -577,9 +582,7 @@ void UpdateHealth() {
 	if (gameState.playingState == STATE_PLAY_SCREEN) {
 		Play::DrawObjectRotated(heart, 1.0f);
 	}
-	//else if {
-	//	Play::DrawObjectRotated(heart);
-	//}
+	
 	if (gameState.playerHealth == 4) {
 		Play::SetSprite(heart, "full_health", 0.0f);
 	}
@@ -602,7 +605,7 @@ void UpdateHealth() {
 }
 
 void BossDead() {
-	if (gameState.bossHealth <= 0) {
+	if (gameState.bossHealth <= 100) {
 		gameState.bossState = STATE_BOSS_DEAD;
 	}
 }
