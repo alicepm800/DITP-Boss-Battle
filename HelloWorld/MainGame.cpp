@@ -51,7 +51,7 @@ struct GameState {
 	int cleaveCooldown = 0;
 	int hitBossCooldown = 5;
 	int bossHealth = 0; 
-	int playerHealth = 0; //if boss hit with fireball or minion remove quarter of heart, if boss hit with cleave remove half of heart
+	int playerHealth = 0; 
 	int phase = 0;
 	int minionsCreated = 0;
 	int minionCooldown = 0;
@@ -62,6 +62,7 @@ struct GameState {
 	int magicBallsCreated = 0;
 	bool gameStarted = false;
 	bool titleFontWritten = false;
+	int lastPosXToDraw = 0;//to inform the length of the boss' health bar so it dynamically
 
 	PlayingState playingState = STATE_START_SCREEN;
 	CatState catState = STATE_APPEAR;
@@ -84,7 +85,8 @@ enum GameObjectType {
 	TYPE_SMASH_HIT_BOX,
 	TYPE_RIGHT_MAGIC_FIREBALL,
 	TYPE_LEFT_MAGIC_FIREBALL,
-	TYPE_UI_PANEL
+	TYPE_UI_PANEL,
+	TYPE_BOSS_HEALTH
 	
 };
 
@@ -99,8 +101,7 @@ void UpdateMinion();
 void UpdateMinionSpawn();
 void BossDead();
 void UpdateGame();
-
-
+void UpdateBossHealthBar();
 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::CreateManager(DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_SCALE);
@@ -151,16 +152,19 @@ void UpdateGame() {
 	std::vector<int>fireball_list = Play::CollectGameObjectIDsByType(TYPE_FIREBALL);
 	std::vector<int>right_magic_ball_list = Play::CollectGameObjectIDsByType(TYPE_RIGHT_MAGIC_FIREBALL);
 	std::vector<int>left_magic_ball_list = Play::CollectGameObjectIDsByType(TYPE_LEFT_MAGIC_FIREBALL);
+	int segment_id = Play::GetSpriteId("health_bar_segment");
 
 	switch (gameState.playingState){
 		case STATE_START_SCREEN:
 			Play::DrawObjectRotated(ui_panel);
 			Play::DrawFontText("69px", "BOSS BATTLE", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
 			Play::DrawFontText("28px", "press spacebar to start", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
+			
 			if (Play::KeyPressed(VK_SPACE)) {
 				gameState.gameStarted = true;
 				Play::StartAudioLoop("battle_theme");
 				gameState.playingState = STATE_PLAY_SCREEN;
+				gameState.lastPosXToDraw = 925;
 			}
 			break;
 
@@ -168,7 +172,11 @@ void UpdateGame() {
 			Play::DrawFontText("28px", "Move: arrows", { DISPLAY_WIDTH  - 1250, DISPLAY_HEIGHT - 200 }, Play::LEFT);
 			Play::DrawFontText("28px", "Sword : A", { DISPLAY_WIDTH - 1250, DISPLAY_HEIGHT - 150 }, Play::LEFT);
 			Play::DrawFontText("28px", "Magic: spacebar", { DISPLAY_WIDTH - 1250, DISPLAY_HEIGHT - 100 }, Play::LEFT);
-			Play::DrawRect({ 426, 650 }, { 852, 700 }, Play::cWhite);
+			Play::DrawRect({ 340, 650 }, { 940, 700 }, Play::cWhite);
+			for (int x = 345; x < gameState.lastPosXToDraw; x++) { 	
+				Play::DrawSprite(segment_id, { x, 660 }, 0);
+			}
+			
 			break;
 
 		case STATE_GAME_OVER:
@@ -189,6 +197,7 @@ void UpdateGame() {
 			gameState.gameStarted = false;
 			if (Play::KeyPressed(VK_SPACE)) {
 				gameState.gameStarted = true;
+				gameState.lastPosXToDraw = 925;
 				Play::StartAudioLoop("battle_theme");
 				gameState.catState = STATE_IDLE;
 				gameState.bossState = STATE_BOSS_IDLE;
@@ -214,11 +223,13 @@ void UpdateGame() {
 			gameState.gameStarted = false;
 			if (Play::KeyPressed(VK_SPACE)) {
 				gameState.gameStarted = true;
+				gameState.lastPosXToDraw = 925;
 				Play::StartAudioLoop("battle_theme");
 				gameState.catState = STATE_IDLE;
 				gameState.bossState = STATE_BOSS_IDLE;
 				gameState.playingState = STATE_PLAY_SCREEN;
 			}	
+			break;
 	}
 
 }
@@ -231,7 +242,7 @@ void UpdateCat() {
 		case STATE_APPEAR:
 
 			gameState.playerHealth = 4;
-			gameState.bossHealth = 3000; //remember to change
+			gameState.bossHealth = 3000; 
 			gameState.phase = 1;
 			if (gameState.gameStarted == true) {
 				gameState.catState = STATE_IDLE;
@@ -306,6 +317,7 @@ void UpdateCat() {
 					if (cat.frame == 0) {
 						Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
 						gameState.bossHealth -= 50;
+						gameState.lastPosXToDraw -= 10;
 					}
 					if (gameState.bossHealth <= 1500) {
 						gameState.phase = 2;
@@ -315,6 +327,7 @@ void UpdateCat() {
 					if (cat.frame == 0) {
 						Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
 						gameState.bossHealth -= 50;
+						gameState.lastPosXToDraw -= 10;
 					}
 					if (gameState.bossHealth <= 1500) {
 						gameState.phase = 2;
@@ -557,6 +570,8 @@ void UpdateBoss() {
 	UpdateMagicFireball();
 	UpdateSuccessfulHit();
 }
+
+
 void UpdateHealth() {
 	GameObject& heart = Play::GetGameObjectByType(TYPE_HEART);
 	if (gameState.playingState == STATE_GAME_OVER) {
@@ -671,7 +686,8 @@ void UpdateMagicFireball() {
 		}
 
 		if (magic_ball.boss_been_hit == true) {
-			gameState.bossHealth - 10;
+			gameState.bossHealth -=  10;
+			gameState.lastPosXToDraw -= 2;
 			Play::DestroyGameObject(right_magic_ball_id);	
 		}
 		else if (magic_ball.boss_been_hit == false) {
@@ -694,7 +710,8 @@ void UpdateMagicFireball() {
 		}
 
 		if ((magic_ball.boss_been_hit == true) ) {
-			gameState.bossHealth - 10;
+			gameState.bossHealth -= 10;
+			gameState.lastPosXToDraw -= 2;
 			Play::DestroyGameObject(left_magic_ball_id);
 		}
 		else if (magic_ball.boss_been_hit == false) {
@@ -702,7 +719,6 @@ void UpdateMagicFireball() {
 			Play::UpdateGameObject(magic_ball);
 			Play::DrawObjectRotated(magic_ball);
 		}
-		
 	}
 }
 
@@ -723,7 +739,7 @@ void UpdateMinion() {
 		DrawObjectXFlipped(minion);
 		
 
-		if (Play::IsColliding(minion, cat) && (gameState.catState == STATE_SWORD_ATTACK)) { //perhaps you should add shooting magic to cat to kill minions
+		if (Play::IsColliding(minion, cat) && (gameState.catState == STATE_SWORD_ATTACK)) { 
 			Play::SetSprite(minion, "minion_death", 0.25f);
 			minion.has_been_attacked = true;
 		}
