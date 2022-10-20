@@ -217,8 +217,7 @@ void UpdateGame() {
 				gameState.catState = STATE_IDLE;
 				gameState.bossState = STATE_BOSS_IDLE;
 				gameState.playingState = STATE_PLAY_SCREEN;
-			}
-			
+			}	
 	}
 
 }
@@ -231,7 +230,7 @@ void UpdateCat() {
 		case STATE_APPEAR:
 
 			gameState.playerHealth = 4;
-			gameState.bossHealth = 500;
+			gameState.bossHealth = 3000; //remember to change
 			gameState.phase = 1;
 			if (gameState.gameStarted == true) {
 				gameState.catState = STATE_IDLE;
@@ -304,7 +303,7 @@ void UpdateCat() {
 						Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x + 50, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
 						gameState.bossHealth -= 50;
 					}
-					if (gameState.bossHealth <= 250) {
+					if (gameState.bossHealth <= 1500) {
 						gameState.phase = 2;
 					}
 				}
@@ -313,7 +312,7 @@ void UpdateCat() {
 						Play::CreateGameObject(TYPE_BOSS_HIT, { cat.pos.x - 120, cat.pos.y - 50 }, 5, "successful_attack"); //makes attack super slow
 						gameState.bossHealth -= 50;
 					}
-					if (gameState.bossHealth <= 250) {
+					if (gameState.bossHealth <= 1500) {
 						gameState.phase = 2;
 					}
 				}
@@ -338,7 +337,8 @@ void UpdateBoss() {
 
 	switch (gameState.bossState) {
 	case STATE_BOSS_APPEAR:
-		gameState.bossIdleCooldown = 200;
+		gameState.bossIdleCooldown = 200; //remember to change!
+
 		if (gameState.gameStarted == true) {
 			gameState.bossState = STATE_BOSS_IDLE;
 		}
@@ -541,7 +541,6 @@ void UpdateBoss() {
 		break;
 	}
 
-	void BossDead();
 	if ((gameState.bossState == STATE_BOSS_DEAD) && (boss.frame == 22)) {
 		Play::DrawObjectTransparent(boss, 0.0f);
 	}
@@ -549,6 +548,7 @@ void UpdateBoss() {
 		DrawObjectXFlipped(boss);
 	}
 	Play::UpdateGameObject(boss);
+	BossDead();
 	UpdateFireball();
 	UpdateMagicFireball();
 	UpdateSuccessfulHit();
