@@ -574,12 +574,12 @@ void UpdateBoss() {
 
 void UpdateHealth() {
 	GameObject& heart = Play::GetGameObjectByType(TYPE_HEART);
-	if (gameState.playingState == STATE_GAME_OVER) {
-		Play::DrawObjectRotated(heart, 0.0f);
+	if (gameState.playingState == STATE_PLAY_SCREEN) {
+		Play::DrawObjectRotated(heart, 1.0f);
 	}
-	else {
-		Play::DrawObjectRotated(heart);
-	}
+	//else if {
+	//	Play::DrawObjectRotated(heart);
+	//}
 	if (gameState.playerHealth == 4) {
 		Play::SetSprite(heart, "full_health", 0.0f);
 	}
