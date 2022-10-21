@@ -1,7 +1,6 @@
 # DITP-Boss-Battle
 Mini boss battle created for Sumo Digital's Diversity Internship Training Programme. Aim of the game is to kill the demon (the boss).
-Boss fight includes 2 phases, phases change when boss' health is reduced to half of full health.
-Boss fight includes 2 phases, phases change when boss' health is reduced to half of full health.
+Boss fight includes 2 phases, phases change when boss' health is reduced to half of boss' health.
 Phase 1 attacks: fireballs, sword hit.
 Phase 2 attacks: summoning minions, jumping on the player, sword hit.
 Player abilities: swing sword, shoot a magic ball
