@@ -1515,6 +1515,7 @@ struct GameObject
 	bool cat_been_hit{ false };
 	bool boss_been_hit{ false };
 	bool minion_timer_started{ false };
+	bool minion_dead{ false };
 
 private:
 	// The GameObject's id should never be changed manually so we make it private!

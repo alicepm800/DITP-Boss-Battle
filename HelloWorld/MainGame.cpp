@@ -753,7 +753,7 @@ void UpdateMinion() {
 			minion.radius == 0;
 			minion.has_been_attacked = true;
 		}
-		else if (Play::IsColliding(minion, cat) && (gameState.catState != STATE_SWORD_ATTACK)) {
+		else if (Play::IsColliding(minion, cat) && (gameState.catState != STATE_SWORD_ATTACK) && (minion.minion_dead == false)) {
 			cat.cat_been_hit = true;
 			if (minion.minion_timer_started == false) {
 				gameState.hitByMinionTimer = 60;
@@ -776,6 +776,7 @@ void UpdateMinion() {
 		for (int id_right_magic_ball : right_magic_ball_list) {
 			GameObject& magic_ball = Play::GetGameObject(id_right_magic_ball);
 			if (Play::IsColliding(magic_ball, minion)) {
+				minion.minion_dead = true;
 				Play::PlayAudio("minion_death");
 				Play::SetSprite(minion, "minion_death", 0.25f);
 				minion.radius = 0;
@@ -787,6 +788,7 @@ void UpdateMinion() {
 		for (int id_left_magic_ball : left_magic_ball_list) {
 			GameObject& magic_ball = Play::GetGameObject(id_left_magic_ball);
 			if (Play::IsColliding(magic_ball, minion)) {
+				minion.minion_dead = true;
 				Play::PlayAudio("minion_death");
 				minion.has_been_attacked = true;
 				Play::SetSprite(minion, "minion_death", 0.25f);
