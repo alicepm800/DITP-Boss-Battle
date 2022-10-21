@@ -102,7 +102,6 @@ void UpdateMinion();
 void UpdateMinionSpawn();
 void BossDead();
 void UpdateGame();
-void UpdateStars();
 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::CreateManager(DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_SCALE);
@@ -580,7 +579,6 @@ void UpdateBoss() {
 	UpdateFireball();
 	UpdateMagicFireball();
 	UpdateSuccessfulHit();
-	UpdateStars();
 }
 
 
@@ -692,14 +690,6 @@ void UpdateMagicFireball() {
 		if (Play::IsColliding(magic_ball, boss)) {
 			magic_ball.boss_been_hit = true;
 			Play::PlayAudio("enemy_hurt");
-			for (float rad{ 0.1f }; rad < 2.0f; rad += 0.75f) {
-				int star_id = Play::CreateGameObject(TYPE_STAR, magic_ball.pos, 0, "star");
-				GameObject& star = Play::GetGameObject(star_id);
-				star.rotSpeed = 0.1f;
-				star.acceleration = { 0.0f, 0.5f };
-				Play::SetGameObjectDirection(star, 16, rad * PLAY_PI);
-				
-			}
 		}
 
 		if (magic_ball.boss_been_hit == true) {
@@ -725,15 +715,6 @@ void UpdateMagicFireball() {
 		if (Play::IsColliding(magic_ball, boss)) {
 			magic_ball.boss_been_hit = true;
 			Play::PlayAudio("enemy_hurt");
-			for (float rad{ 0.1f }; rad < 2.0f; rad += 0.75f) {
-				int star_id = Play::CreateGameObject(TYPE_STAR, magic_ball.pos, 0, "star");
-				GameObject& star = Play::GetGameObject(star_id);
-				star.scale = 4.0f;
-				star.rotSpeed = 0.1f;
-				star.acceleration = { 0.0f, 0.5f };
-				Play::SetGameObjectDirection(star, 18, rad * PLAY_PI);
-				
-			}
 		}
 
 		if ((magic_ball.boss_been_hit == true) ) {
@@ -749,17 +730,6 @@ void UpdateMagicFireball() {
 		}
 	}
 	
-}
-
-void UpdateStars() {
-	std::vector<int>star_list = Play::CollectGameObjectIDsByType(TYPE_STAR);
-
-	for (int star_id : star_list) {
-		GameObject& star = Play::GetGameObject(star_id);
-		Play::UpdateGameObject(star);
-		Play::DrawObjectRotated(star, 1.0f); //make transparent over time
-		
-	}
 }
 
 void UpdateMinion() {
