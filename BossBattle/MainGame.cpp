@@ -801,7 +801,7 @@ void UpdateMinion() {
 		if (minion.has_been_attacked == true) {
 			minion.velocity = { 0,0 };
 			if (minion.frame == 11) {
-				Play::DestroyGameObject(minion_id); //add in reduce transparency over time, when transparency <= 0 destroy game object
+				Play::DestroyGameObject(minion_id);
 				gameState.minionsCreated--;
 			}
 		}
