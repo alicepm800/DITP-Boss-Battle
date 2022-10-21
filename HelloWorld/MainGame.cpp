@@ -36,7 +36,6 @@ enum PlayingState {
 	STATE_PLAY_SCREEN,
 	STATE_GAME_OVER,
 	STATE_WIN
-
 };
 
 struct GameState {
@@ -87,7 +86,8 @@ enum GameObjectType {
 	TYPE_RIGHT_MAGIC_FIREBALL,
 	TYPE_LEFT_MAGIC_FIREBALL,
 	TYPE_UI_PANEL,
-	TYPE_BOSS_HEALTH
+	TYPE_BOSS_HEALTH,
+	TYPE_STAR
 	
 };
 
@@ -102,6 +102,7 @@ void UpdateMinion();
 void UpdateMinionSpawn();
 void BossDead();
 void UpdateGame();
+void UpdateStars();
 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE) {
 	Play::CreateManager(DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_SCALE);
@@ -205,7 +206,6 @@ void UpdateGame() {
 			break;
 
 		case STATE_WIN:
-			Play::StopAudioLoop("battle_theme");
 			Play::DrawObjectRotated(ui_panel);
 			Play::DrawFontText("69px", "BOSS DEAD", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 400 }, Play::CENTRE);
 			Play::DrawFontText("28px", "press space to play again", { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
@@ -478,7 +478,7 @@ void UpdateBoss() {
 					gameState.bossIdleCooldown = 200;
 				}
 				else if (gameState.phase == 2) {
-					gameState.bossIdleCooldown = 300;
+					gameState.bossIdleCooldown = 160;
 				}
 				if (cat.cat_been_hit == true) {
 					gameState.playerHealth--;
@@ -495,7 +495,7 @@ void UpdateBoss() {
 
 	case STATE_BOSS_SMASH:
 		Play::SetSprite(boss, "boss_smash", 0.1f);
-		if (boss.frame == 1) {
+		if (boss.frame == 0) {
 			boss.velocity = { 0,0 };
 			gameState.catTargetPositionX = cat.pos.x;
 			gameState.catTargetPositionY = cat.pos.y;
@@ -557,6 +557,7 @@ void UpdateBoss() {
 
 	case STATE_BOSS_DEAD:
 		if (boss.frame == 0) {
+			Play::StopAudioLoop("battle_theme");
 			Play::PlayAudio("boss_death");
 		}
 		Play::SetSprite(boss, "boss_dead", 0.1f);
@@ -579,6 +580,7 @@ void UpdateBoss() {
 	UpdateFireball();
 	UpdateMagicFireball();
 	UpdateSuccessfulHit();
+	UpdateStars();
 }
 
 
@@ -667,8 +669,7 @@ void UpdateFireball() {
 
 		if (((fireball.cat_been_hit == true) && (fireball.frame == 9)) 
 			|| (!Play::IsVisible(fireball) )) { 
-				Play::DestroyGameObject(fireball_id);
-				
+				Play::DestroyGameObject(fireball_id);	
 		}
 	}
 }
@@ -691,6 +692,14 @@ void UpdateMagicFireball() {
 		if (Play::IsColliding(magic_ball, boss)) {
 			magic_ball.boss_been_hit = true;
 			Play::PlayAudio("enemy_hurt");
+			for (float rad{ 0.1f }; rad < 2.0f; rad += 0.75f) {
+				int star_id = Play::CreateGameObject(TYPE_STAR, magic_ball.pos, 0, "star");
+				GameObject& star = Play::GetGameObject(star_id);
+				star.rotSpeed = 0.1f;
+				star.acceleration = { 0.0f, 0.5f };
+				Play::SetGameObjectDirection(star, 16, rad * PLAY_PI);
+				
+			}
 		}
 
 		if (magic_ball.boss_been_hit == true) {
@@ -716,6 +725,15 @@ void UpdateMagicFireball() {
 		if (Play::IsColliding(magic_ball, boss)) {
 			magic_ball.boss_been_hit = true;
 			Play::PlayAudio("enemy_hurt");
+			for (float rad{ 0.1f }; rad < 2.0f; rad += 0.75f) {
+				int star_id = Play::CreateGameObject(TYPE_STAR, magic_ball.pos, 0, "star");
+				GameObject& star = Play::GetGameObject(star_id);
+				star.scale = 4.0f;
+				star.rotSpeed = 0.1f;
+				star.acceleration = { 0.0f, 0.5f };
+				Play::SetGameObjectDirection(star, 18, rad * PLAY_PI);
+				
+			}
 		}
 
 		if ((magic_ball.boss_been_hit == true) ) {
@@ -725,9 +743,22 @@ void UpdateMagicFireball() {
 		}
 		else if (magic_ball.boss_been_hit == false) {
 			magic_ball.velocity = { -4, 0 };
+			
 			Play::UpdateGameObject(magic_ball);
 			Play::DrawObjectRotated(magic_ball);
 		}
+	}
+	
+}
+
+void UpdateStars() {
+	std::vector<int>star_list = Play::CollectGameObjectIDsByType(TYPE_STAR);
+
+	for (int star_id : star_list) {
+		GameObject& star = Play::GetGameObject(star_id);
+		Play::UpdateGameObject(star);
+		Play::DrawObjectRotated(star, 1.0f); //make transparent over time
+		
 	}
 }
 
